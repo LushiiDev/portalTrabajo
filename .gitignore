@@ -1,0 +1,23 @@
+ # Variables de entorno
+.env
+.env.local
+.env.production
+
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Supabase local (si usás)
+supabase/.branches/
+supabase/logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
