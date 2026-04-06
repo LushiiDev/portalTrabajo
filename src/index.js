@@ -1,6 +1,7 @@
 import express from 'express';
 import jobsRouter from './routes/jobsRouter.js'
 import dotenv from 'dotenv'
+import { errorHandler } from './middlewares/errorHandler.js';
 dotenv.config();
 
 const app = express();
@@ -12,6 +13,8 @@ app.get('/', (req, res) => {
 });
 
 app.use('/jobs', jobsRouter)
+
+app.use(errorHandler);
 
 app.listen(process.env.PORT || 3000, () => {
     console.log(`Servidor corriendo en http://localhost:${process.env.PORT || 3000}`)
