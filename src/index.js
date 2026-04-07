@@ -1,4 +1,5 @@
 import express from 'express';
+import tipsRouter from './routes/tipsRouter.js';
 import jobsRouter from './routes/jobsRouter.js'
 import forumRepliesRouter from './routes/forumRepliesRouter.js'
 import forumThreadsRouter from './routes/forumThreadsRouter.js'
@@ -19,6 +20,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/jobs', jobsRouter);
+app.use('/tips', tipsRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/forum_replies', forumRepliesRouter);
