@@ -70,10 +70,15 @@ export const deleteJob = async (id) => {
   };
 };
 
-export const updateJob = async(id,updates) => {
-  const {data, error} = await supabase.from("job_posts").update(updates).eq("id", id).select().single();
+export const updateJob = async (id, updates) => {
+  const { data, error } = await supabase
+    .from("job_posts")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
 
   if (error) throw error;
 
-  return data
-}
+  return data;
+};

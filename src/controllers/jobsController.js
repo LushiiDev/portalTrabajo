@@ -46,14 +46,14 @@ export const deleteTrabajo = async (req, res, next) => {
   }
 };
 
-export const putActualizarTrabajo = async(req, res, next) => {
-    try {
-        const {id} = req.params;
-        const updates = req.body;
+export const putActualizarTrabajo = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
 
-        const result = await jobsService.updateJob(id, updates);
-        res.json(result)
-    } catch (err) {
-        return next(err);
-    }
-}
+    const result = await jobsService.updateJob(id, updates);
+    res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+};
