@@ -6,6 +6,8 @@ import forumThreadsRouter from './routes/forumThreadsRouter.js'
 import applicationsRouter from './routes/applicationsRouter.js'
 import companiesRouter from './routes/companiesRouter.js';
 import profilesRouter from './routes/profilesRouter.js';
+import alertsRouter from './routes/alertsRouter.js';
+import reviewsRouter from './routes/reviewsRouter.js';
 
 import dotenv from 'dotenv'
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -26,6 +28,8 @@ app.use('/api/profiles', profilesRouter);
 app.use('/forum_replies', forumRepliesRouter);
 app.use('/forum_threads', forumThreadsRouter);
 app.use('/applications', applicationsRouter);
+app.use('/alerts', alertsRouter);
+app.use('/reviews', reviewsRouter);
 
 app.use(errorHandler);
 
