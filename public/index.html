@@ -21,7 +21,7 @@
         <div class="d-flex justify-content-between align-items-center w-100">
           <a class="navbar-brand flex-shrink-0" href="#">
             <img
-              src="/portalTrabajo/img/LogoEmpresa.png"
+              src="../img/LogoEmpresa.png"
               alt="Bootstrap"
               width="150px"
               height="50px"
@@ -42,14 +42,42 @@
             </li>
           </ul>
 
-          <form class="d-flex flex-shrink-0" role="search">
-            <button class="btn btn-outline-info me-2" type="submit">
-              Registrarse
-            </button>
-            <button class="btn btn-primary" type="submit">
-              Iniciar sesión
-            </button>
-          </form>
+          <div class="d-flex flex-shrink-0 align-items-center gap-2">
+  <div id="authActions">
+    <a class="btn btn-outline-info me-2" href="registroUsuario.html">Registrarse</a>
+    <a class="btn btn-primary" href="registroUsuario.html">Iniciar sesión</a>
+  </div>
+
+  <div id="userMenu" class="dropdown d-none">
+    <button
+      class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2"
+      type="button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    >
+      <i class="bi bi-person-circle"></i>
+      <span id="userEmailLabel">Usuario</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li>
+        <a class="dropdown-item" href="#">
+          <i class="bi bi-person me-2"></i>Perfil
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item" href="#">
+          <i class="bi bi-gear me-2"></i>Configuración
+        </a>
+      </li>
+      <li><hr class="dropdown-divider" /></li>
+      <li>
+        <button id="logoutBtn" class="dropdown-item text-danger" type="button">
+          <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
         </div>
       </div>
     </nav>
@@ -71,9 +99,20 @@
             />
             <select class="form-select" aria-label="Default select example">
               <option selected></option>
-              <option value="1">One</option>
-              <option value="2">Two</option>
-              <option value="3">Three</option>
+              <option value="1">San Salvador</option>
+              <option value="2">Santa Ana</option>
+              <option value="3">Ahuachapán</option>
+              <option value="4">Sonsonate</option>
+              <option value="5">La Libertad</option>
+              <option value="6">Cuscatlán</option>
+              <option value="7">La Paz</option>
+              <option value="8">Cabañas</option>
+              <option value="9">San Vicente</option>
+              <option value="10">Usulután</option>
+              <option value="11">Morazán</option>
+              <option value="12">San Miguel</option>
+              <option value="13">La Unión</option>
+              <option value="14">Chalatenango</option>
             </select>
             <button
               type="button"
@@ -144,7 +183,7 @@
           <div class="col-md-4 text-center text-md-start">
             <a class="d-inline-block mb-3" href="#">
               <img
-                src="/portalTrabajo/img/LogoEmpresa.png"
+                src="../img/LogoEmpresa.png"
                 alt="ChambaHub"
                 width="170"
               />
@@ -187,5 +226,7 @@
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/app.js"></script>
   </body>
 </html>
