@@ -1,5 +1,7 @@
 import express from 'express';
 import jobsRouter from './routes/jobsRouter.js'
+import forumRepliesRouter from './routes/forumRepliesRouter.js'
+import forumThreadsRouter from './routes/forumThreadsRouter.js'
 import applicationsRouter from './routes/applicationsRouter.js'
 import dotenv from 'dotenv'
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -13,7 +15,9 @@ app.get('/', (req, res) => {
     res.send('Hola mundo');
 });
 
-app.use('/jobs', jobsRouter);
+app.use('/jobs', jobsRouter)
+app.use('/forum_replies', forumRepliesRouter)
+app.use('/forum_threads', forumThreadsRouter)
 app.use('/applications', applicationsRouter);
 
 app.use(errorHandler);
