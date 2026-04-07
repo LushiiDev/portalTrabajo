@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -22,13 +22,18 @@
   </head>
 
   <body class="d-flex align-items-center justify-content-center min-vh-100">
-
-    <div class="card border shadow-sm" style="width: 100%; max-width: 440px;">
+    <div class="card border shadow-sm" style="width: 100%; max-width: 440px">
       <div class="card-body p-4 p-md-5">
-
         <div class="text-center mb-2">
-          <img src="./img/chambaHub.png" alt="ChambaHub" height="48" class="mb-2" />
-          <p class="text-secondary small mb-0">Tu portal de empleo profesional</p>
+          <img
+            src="./img/chambaHub.png"
+            alt="ChambaHub"
+            height="48"
+            class="mb-2"
+          />
+          <p class="text-secondary small mb-0">
+            Tu portal de empleo profesional
+          </p>
         </div>
 
         <ul class="nav nav-tabs mt-3 mb-4" id="authTabs" role="tablist">
@@ -39,7 +44,9 @@
               data-bs-target="#panelLogin"
               type="button"
               role="tab"
-            >Iniciar Sesión</button>
+            >
+              Iniciar Sesión
+            </button>
           </li>
           <li class="nav-item" role="presentation">
             <button
@@ -48,31 +55,58 @@
               data-bs-target="#panelRegistro"
               type="button"
               role="tab"
-            >Registrarse</button>
+            >
+              Registrarse
+            </button>
           </li>
         </ul>
 
         <div class="tab-content">
-
-          <div class="tab-pane fade show active" id="panelLogin" role="tabpanel">
-
+          <div
+            class="tab-pane fade show active"
+            id="panelLogin"
+            role="tabpanel"
+          >
             <p class="small fw-semibold text-secondary mb-2">Tipo de Cuenta</p>
             <div class="btn-group w-100 mb-3" role="group">
-              <input type="radio" class="btn-check" name="tipoLogin" id="loginUsuario" autocomplete="off" checked />
-              <label class="btn btn-outline-secondary w-50 fw-semibold" for="loginUsuario">Usuario</label>
+              <input
+                type="radio"
+                class="btn-check"
+                name="tipoLogin"
+                id="loginUsuario"
+                autocomplete="off"
+                checked
+              />
+              <label
+                class="btn btn-outline-secondary w-50 fw-semibold"
+                for="loginUsuario"
+                >Usuario</label
+              >
 
-              <input type="radio" class="btn-check" name="tipoLogin" id="loginEmpresa" autocomplete="off" />
-              <label class="btn btn-outline-secondary w-50 fw-semibold" for="loginEmpresa">Empresa</label>
+              <input
+                type="radio"
+                class="btn-check"
+                name="tipoLogin"
+                id="loginEmpresa"
+                autocomplete="off"
+              />
+              <label
+                class="btn btn-outline-secondary w-50 fw-semibold"
+                for="loginEmpresa"
+                >Empresa</label
+              >
             </div>
 
-            <form action="#" method="POST">
+            <form id="loginForm" action="#" method="POST">
               <div class="mb-3">
-                <label class="form-label fw-semibold small">Correo Electrónico</label>
+                <label class="form-label fw-semibold small"
+                  >Correo Electrónico</label
+                >
                 <div class="input-group">
                   <span class="input-group-text bg-light text-secondary">
                     <i class="bi bi-envelope"></i>
                   </span>
-                  <input type="email" class="form-control" name="email" placeholder="usuario@correo.com" />
+                  <input type="email" class="form-control" name="email" placeholder="usuario@correo.com" required />
                 </div>
               </div>
 
@@ -82,58 +116,146 @@
                   <span class="input-group-text bg-light text-secondary">
                     <i class="bi bi-lock"></i>
                   </span>
-                  <input type="password" class="form-control" name="password" placeholder="••••••••" />
+                  <input type="password" class="form-control" name="password" placeholder="••••••••" required />
                 </div>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center mb-3">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
                 <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="recordar" name="recordar" />
-                  <label class="form-check-label small text-secondary fw-semibold" for="recordar">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="recordar"
+                    name="recordar"
+                  />
+                  <label
+                    class="form-check-label small text-secondary fw-semibold"
+                    for="recordar"
+                  >
                     Recordarme
                   </label>
                 </div>
-                <a href="#" class="small text-decoration-none text-secondary">¿Olvidaste tu contraseña?</a>
+                <a href="#" class="small text-decoration-none text-secondary"
+                  >¿Olvidaste tu contraseña?</a
+                >
               </div>
 
-              <button type="submit" class="btn btn-dark w-100 fw-bold">Entrar</button>
+              <button type="submit" class="btn btn-dark w-100 fw-bold">
+                Entrar
+              </button>
             </form>
 
             <div class="text-center mt-3">
-              <a href="#" class="small text-decoration-none text-secondary">Volver al inicio</a>
+              <a href="#" class="small text-decoration-none text-secondary"
+                >Volver al inicio</a
+              >
             </div>
           </div>
 
           <div class="tab-pane fade" id="panelRegistro" role="tabpanel">
-
             <p class="small fw-semibold text-secondary mb-2">Tipo de Cuenta</p>
             <div class="btn-group w-100 mb-3" role="group">
-              <input type="radio" class="btn-check" name="tipoReg" id="regUsuario" autocomplete="off" checked />
-              <label class="btn btn-outline-secondary w-50 fw-semibold" for="regUsuario">Usuario</label>
+              <input
+                type="radio"
+                class="btn-check"
+                name="tipoReg"
+                id="regUsuario"
+                autocomplete="off"
+                checked
+              />
+              <label
+                class="btn btn-outline-secondary w-50 fw-semibold"
+                for="regUsuario"
+                >Usuario</label
+              >
 
-              <input type="radio" class="btn-check" name="tipoReg" id="regEmpresa" autocomplete="off" />
-              <label class="btn btn-outline-secondary w-50 fw-semibold" for="regEmpresa">Empresa</label>
+              <input
+                type="radio"
+                class="btn-check"
+                name="tipoReg"
+                id="regEmpresa"
+                autocomplete="off"
+              />
+              <label
+                class="btn btn-outline-secondary w-50 fw-semibold"
+                for="regEmpresa"
+                >Empresa</label
+              >
             </div>
 
-            <form action="#" method="POST">
-              <div class="row g-2 mb-3">
-                <div class="col-6">
-                  <label class="form-label fw-semibold small">Nombre</label>
-                  <input type="text" class="form-control" name="nombre" placeholder="Juan" />
+            <form id="registroForm" action="#" method="POST">
+              <div id="camposUsuario" class="mb-3">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label fw-semibold small">Nombre</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="nombre"
+                      required
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-semibold small">Apellido</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="apellido"
+                      required
+                    />
+                  </div>
                 </div>
-                <div class="col-6">
-                  <label class="form-label fw-semibold small">Apellido</label>
-                  <input type="text" class="form-control" name="apellido" placeholder="Pérez" />
+              </div>
+
+              <div id="camposEmpresa" class="d-none mb-3">
+                <div class="mb-2">
+                  <label class="form-label fw-semibold small"
+                    >Usuario</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="nombreUsuario"
+                  />
+                  <label class="form-label fw-semibold small"
+                    >Nombre de la Empresa</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="nombreEmpresa"
+                  />
+                </div>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label fw-semibold small">NIT</label>
+                    <input type="text" class="form-control" name="ruc" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-semibold small"
+                      >Sitio Web</label
+                    >
+                    <input type="url" class="form-control" name="sitioWeb" />
+                  </div>
                 </div>
               </div>
 
               <div class="mb-3">
-                <label class="form-label fw-semibold small">Correo Electrónico</label>
+                <label class="form-label fw-semibold small"
+                  >Correo Electrónico</label
+                >
                 <div class="input-group">
                   <span class="input-group-text bg-light text-secondary">
                     <i class="bi bi-envelope"></i>
                   </span>
-                  <input type="email" class="form-control" name="email" placeholder="usuario@correo.com" />
+                  <input
+                    type="email"
+                    class="form-control"
+                    name="email"
+                    placeholder="usuario@correo.com"
+                  />
                 </div>
               </div>
 
@@ -143,37 +265,62 @@
                   <span class="input-group-text bg-light text-secondary">
                     <i class="bi bi-lock"></i>
                   </span>
-                  <input type="password" class="form-control" name="password" placeholder="••••••••" />
+                  <input
+                    type="password"
+                    class="form-control"
+                    name="password"
+                    placeholder="••••••••"
+                  />
                 </div>
               </div>
 
               <div class="mb-3">
-                <label class="form-label fw-semibold small">Confirmar Contraseña</label>
+                <label class="form-label fw-semibold small"
+                  >Confirmar Contraseña</label
+                >
                 <div class="input-group">
                   <span class="input-group-text bg-light text-secondary">
                     <i class="bi bi-lock-fill"></i>
                   </span>
-                  <input type="password" class="form-control" name="confirmar" placeholder="••••••••" />
+                  <input
+                    type="password"
+                    class="form-control"
+                    name="confirmar"
+                    placeholder="••••••••"
+                  />
                 </div>
               </div>
 
               <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="terminos" name="terminos" />
-                <label class="form-check-label small text-secondary" for="terminos">
-                  Acepto los <a href="#" class="text-decoration-none text-dark fw-semibold">Términos y Condiciones</a>
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="terminos"
+                  name="terminos"
+                />
+                <label
+                  class="form-check-label small text-secondary"
+                  for="terminos"
+                >
+                  Acepto los
+                  <a href="#" class="text-decoration-none text-dark fw-semibold"
+                    >Términos y Condiciones</a
+                  >
                 </label>
               </div>
 
-              <button type="submit" class="btn btn-dark w-100 fw-bold">Crear Cuenta</button>
+              <button type="submit" class="btn btn-dark w-100 fw-bold">
+                Crear Cuenta
+              </button>
             </form>
 
             <div class="text-center mt-3">
-              <a href="#" class="small text-decoration-none text-secondary">Volver al inicio</a>
+              <a href="#" class="small text-decoration-none text-secondary"
+                >Volver al inicio</a
+              >
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
 
@@ -182,5 +329,7 @@
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/app.js"></script>
   </body>
 </html>
