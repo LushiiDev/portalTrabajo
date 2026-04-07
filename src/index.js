@@ -1,8 +1,14 @@
 import express from 'express';
-import jobsRouter from './routes/jobsRouter.js';
 import tipsRouter from './routes/tipsRouter.js';
-import dotenv from 'dotenv';
+import jobsRouter from './routes/jobsRouter.js'
+import forumRepliesRouter from './routes/forumRepliesRouter.js'
+import forumThreadsRouter from './routes/forumThreadsRouter.js'
+import applicationsRouter from './routes/applicationsRouter.js'
+import companiesRouter from './routes/companiesRouter.js';
+import profilesRouter from './routes/profilesRouter.js';
 
+import dotenv from 'dotenv'
+import { errorHandler } from './middlewares/errorHandler.js';
 dotenv.config();
 
 const app = express();
@@ -10,12 +16,19 @@ const app = express();
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('Hola mundo');
+  res.send('Hola mundo');
 });
 
 app.use('/jobs', jobsRouter);
 app.use('/tips', tipsRouter);
+app.use('/api/companies', companiesRouter);
+app.use('/api/profiles', profilesRouter);
+app.use('/forum_replies', forumRepliesRouter);
+app.use('/forum_threads', forumThreadsRouter);
+app.use('/applications', applicationsRouter);
+
+app.use(errorHandler);
 
 app.listen(process.env.PORT || 3000, () => {
-    console.log(`Servidor corriendo en http://localhost:${process.env.PORT || 3000}`);
+  console.log(`Servidor corriendo en http://localhost:${process.env.PORT || 3000}`)
 });
