@@ -99,6 +99,14 @@ function setupNavbarForSession(session) {
 	const userMenu = document.getElementById("userMenu");
 	const userEmailLabel = document.getElementById("userEmailLabel");
 	const logoutBtn = document.getElementById("logoutBtn");
+	const profileIcon = userMenu?.querySelector(".dropdown-menu .bi-person");
+	const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
+	const settingsIcon = userMenu?.querySelector(".dropdown-menu .bi-gear");
+	const settingsLink = settingsIcon ? settingsIcon.closest("a.dropdown-item") : null;
+
+	const meta = session.user?.user_metadata || {};
+	const tipoCuenta = meta.tipo_cuenta || "usuario";
+	const userLabel = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
 
 	if (authActions) {
 		authActions.classList.add("d-none");
@@ -109,7 +117,15 @@ function setupNavbarForSession(session) {
 	}
 
 	if (userEmailLabel) {
-		userEmailLabel.textContent = session.user?.email || "Usuario";
+		userEmailLabel.textContent = userLabel;
+	}
+
+	if (profileLink) {
+		profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
+	}
+
+	if (settingsLink) {
+		settingsLink.href = tipoCuenta === "empresa" ? "./perfilEmpresa.html" : "./perfil.html#perfil-pane";
 	}
 
 	if (logoutBtn) {
