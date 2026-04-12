@@ -1,7 +1,9 @@
 let currentCompany = null;
 let allCompanyJobs = [];
 let allApplications = [];
+let profilesById = new Map();
 let editJobModalInstance = null;
+let applicationsModalInstance = null;
 
 function formatDateEs(value) {
   if (!value) return "-";
@@ -17,7 +19,7 @@ function formatDateEs(value) {
 function formatSalary(min, max) {
   const safeMin = Number(min || 0);
   const safeMax = Number(max || 0);
-  return `${safeMin.toLocaleString("es-ES")} - ${safeMax.toLocaleString("es-ES")} EUR`;
+  return `${safeMin.toLocaleString("es-ES")} - ${safeMax.toLocaleString("es-ES")} USD`;
 }
 
 function normalizeStatus(rawStatus) {
@@ -63,6 +65,19 @@ function getApplicantsByJobId() {
     map.set(jobId, (map.get(jobId) || 0) + 1);
   });
   return map;
+}
+
+function normalizeApplicationStatus(rawStatus) {
+  const status = (rawStatus || "pendiente").toString().trim();
+  if (!status) return "Pendiente";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getCandidateLabel(candidateId) {
+  if (!candidateId) return "Sin candidato";
+  const profile = profilesById.get(candidateId);
+  if (profile?.full_name) return profile.full_name;
+  return candidateId;
 }
 
 function getFilteredJobs() {
@@ -161,6 +176,19 @@ async function loadApplications() {
   }
 }
 
+async function loadProfiles() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profiles`);
+    if (!response.ok) throw new Error("No se pudo obtener profiles");
+
+    const profiles = await response.json();
+    profilesById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+  } catch (error) {
+    console.error("Error cargando perfiles:", error);
+    profilesById = new Map();
+  }
+}
+
 async function loadJobs() {
   const response = await fetch(`${API_BASE_URL}/jobs`);
   if (!response.ok) {
@@ -202,6 +230,73 @@ async function closeJob(jobId) {
 
 function getJobById(jobId) {
   return allCompanyJobs.find((job) => job.id === jobId) || null;
+}
+
+function setupApplicationsModal() {
+  const modalElement = document.getElementById("applicationsModal");
+  if (!modalElement || !window.bootstrap?.Modal) return;
+
+  applicationsModalInstance = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+}
+
+async function openApplicationsModal(jobId) {
+  const job = getJobById(jobId);
+  if (!job) {
+    alert("No se encontro la vacante.");
+    return;
+  }
+
+  const subtitle = document.getElementById("applicationsModalSubtitle");
+  const tableBody = document.getElementById("applicationsTableBody");
+
+  if (!tableBody) return;
+
+  if (subtitle) {
+    subtitle.textContent = `Vacante: ${job.title || "Sin titulo"}`;
+  }
+
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="4" class="text-center text-muted py-3">Cargando postulaciones...</td>
+    </tr>
+  `;
+
+  if (applicationsModalInstance) {
+    applicationsModalInstance.show();
+  }
+
+  await loadApplications();
+
+  const rows = allApplications
+    .filter((application) => application?.job_post_id === jobId)
+    .sort((a, b) => new Date(b.applied_at || 0) - new Date(a.applied_at || 0));
+
+  if (rows.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center text-muted py-3">Aun no hay postulaciones para esta vacante.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = rows
+    .map((application) => {
+      const candidate = getCandidateLabel(application.candidate_id);
+      const cvCell = application.cv_url
+        ? `<a href="${application.cv_url}" target="_blank" rel="noopener noreferrer">Ver CV</a>`
+        : "Sin CV";
+
+      return `
+        <tr>
+          <td>${candidate}</td>
+          <td>${cvCell}</td>
+          <td>${normalizeApplicationStatus(application.status)}</td>
+          <td>${formatDateEs(application.applied_at)}</td>
+        </tr>
+      `;
+    })
+    .join("");
 }
 
 function setupEditModal() {
@@ -401,7 +496,7 @@ function setupButtons() {
     if (!action || !jobId) return;
 
     if (action === "view") {
-      alert("Vista detallada de vacante: pendiente de implementar.");
+      await openApplicationsModal(jobId);
       return;
     }
 
@@ -441,9 +536,10 @@ async function initVacantesPage() {
   }
 
   try {
-    await Promise.all([loadJobs(), loadApplications()]);
+    await Promise.all([loadJobs(), loadApplications(), loadProfiles()]);
     setupFilters();
     setupEditModal();
+    setupApplicationsModal();
     setupButtons();
     renderTable();
   } catch (error) {

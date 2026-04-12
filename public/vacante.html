@@ -24,12 +24,12 @@
           <div
             class="rounded-2 d-flex align-items-center justify-content-center p-2"
           >
-            <img
+          <a href="./index.html"><img
               src="../img/LogoEmpresa.png"
               alt="Bootstrap"
               width="150px"
               height="50px"
-            />
+            /></a>
           </div>
         </div>
         <ul class="nav flex-column gap-1">
@@ -133,7 +133,7 @@
                   <th class="fw-semibold ps-3">Título</th>
                   <th class="fw-semibold">Ubicación</th>
                   <th class="fw-semibold">Tipo</th>
-                  <th class="fw-semibold">Salario</th>
+                  <th class="fw-semibold">Salario (USD)</th>
                   <th class="fw-semibold">Estado</th>
                   <th class="fw-semibold">Postulantes</th>
                   <th class="fw-semibold">Fecha</th>
@@ -219,11 +219,11 @@
 
               <div class="row g-3 mt-1">
                 <div class="col-md-6">
-                  <label for="editSalaryMin" class="form-label small fw-medium">Salario minimo</label>
+                  <label for="editSalaryMin" class="form-label small fw-medium">Salario minimo (USD)</label>
                   <input id="editSalaryMin" type="number" min="0" class="form-control" required />
                 </div>
                 <div class="col-md-6">
-                  <label for="editSalaryMax" class="form-label small fw-medium">Salario maximo</label>
+                  <label for="editSalaryMax" class="form-label small fw-medium">Salario maximo (USD)</label>
                   <input id="editSalaryMax" type="number" min="0" class="form-control" required />
                 </div>
               </div>
@@ -261,6 +261,40 @@
               <button type="submit" id="saveEditJobBtn" class="btn btn-primary">Guardar cambios</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="applicationsModal" tabindex="-1" aria-labelledby="applicationsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="applicationsModalLabel">Postulaciones</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p id="applicationsModalSubtitle" class="text-muted small mb-3">Cargando postulaciones...</p>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Candidato</th>
+                    <th>CV</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="applicationsTableBody">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-3">Sin datos</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
         </div>
       </div>
     </div>
