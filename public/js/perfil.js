@@ -1,6 +1,7 @@
 const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const API_BASE_URL = "http://localhost:3000";
 
 const ACTIVE_TAB_KEY = "perfilActiveTabId";
 
@@ -66,6 +67,29 @@ async function requireSession() {
 	}
 
 	return data.session;
+}
+
+async function apiFetchJson(path, options = {}) {
+	const response = await fetch(API_BASE_URL + path, {
+		headers: {
+			"Content-Type": "application/json",
+			...(options.headers || {}),
+		},
+		...options,
+	});
+
+	let payload = null;
+	try {
+		payload = await response.json();
+	} catch (error) {
+		payload = null;
+	}
+
+	if (!response.ok) {
+		throw new Error(payload?.message || "Error en API");
+	}
+
+	return payload;
 }
 
 function setupNavbarForSession(session) {
@@ -187,17 +211,12 @@ function getMetadataFullName() {
 }
 
 async function loadProfile() {
-	const byId = await supabaseClient
-		.from("profiles")
-		.select("*")
-		.eq("id", currentUser.id)
-		.maybeSingle();
-
-	if (byId.error && byId.error.code !== "PGRST116") {
-		console.error("Error consultando perfil por id:", byId.error);
+	try {
+		currentProfile = await apiFetchJson("/api/profiles/" + currentUser.id);
+	} catch (error) {
+		currentProfile = null;
 	}
 
-	currentProfile = byId.data || null;
 	applyProfileToUI(currentProfile);
 }
 
@@ -257,17 +276,18 @@ async function onProfileSubmit(event) {
 			role: currentProfile?.role || "Candidato",
 		};
 
-		const { data, error } = await supabaseClient
-			.from("profiles")
-			.upsert(updates, { onConflict: "id" })
-			.select()
-			.single();
-
-		if (error) {
-			throw error;
+		if (currentProfile?.id) {
+			currentProfile = await apiFetchJson("/api/profiles/" + currentUser.id, {
+				method: "PUT",
+				body: JSON.stringify(updates),
+			});
+		} else {
+			currentProfile = await apiFetchJson("/api/profiles", {
+				method: "POST",
+				body: JSON.stringify(updates),
+			});
 		}
 
-		currentProfile = data;
 		applyProfileToUI(currentProfile);
 		alert("Perfil guardado correctamente.");
 	} catch (error) {
@@ -352,17 +372,28 @@ function renderApplications(rows) {
 
 async function loadApplications() {
 	try {
-		const { data, error } = await supabaseClient
-			.from("applications")
-			.select("id, job_post_id, candidate_id, cv_url, status, applied_at, job_posts(title, location, contract_type)")
-			.eq("candidate_id", currentUser.id)
-			.order("applied_at", { ascending: false });
+		const applications = await apiFetchJson("/applications");
+		const jobs = await apiFetchJson("/jobs");
 
-		if (error) {
-			throw error;
-		}
+		const jobMap = new Map((jobs || []).map(function (job) {
+			return [job.id, job];
+		}));
 
-		renderApplications(data || []);
+		const ownApplications = (applications || [])
+			.filter(function (application) {
+				return application.candidate_id === currentUser.id;
+			})
+			.map(function (application) {
+				return {
+					...application,
+					job_posts: jobMap.get(application.job_post_id) || null,
+				};
+			})
+			.sort(function (a, b) {
+				return new Date(b.applied_at || b.created_at || 0) - new Date(a.applied_at || a.created_at || 0);
+			});
+
+		renderApplications(ownApplications);
 	} catch (error) {
 		console.error("Error cargando postulaciones:", error);
 		renderApplications([]);
@@ -430,26 +461,27 @@ function onCvFileChange(event) {
 }
 
 async function uploadCvToStorage(file) {
-	const buckets = ["CVS", "cvs", "cv", "resumes"];
-	let lastError = null;
+	const fileAsBase64 = await new Promise(function (resolve, reject) {
+		const reader = new FileReader();
+		reader.onload = function () {
+			const dataUrl = String(reader.result || "");
+			resolve(dataUrl.split(",")[1] || "");
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(file);
+	});
 
-	for (const bucketName of buckets) {
-		const filePath = currentUser.id + "/" + Date.now() + "-" + sanitizeFileName(file.name);
-		const { error } = await supabaseClient.storage.from(bucketName).upload(filePath, file, { upsert: true });
+	const response = await apiFetchJson("/api/profiles/" + currentUser.id + "/cv-upload", {
+		method: "POST",
+		body: JSON.stringify({
+			fileName: sanitizeFileName(file.name),
+			fileType: file.type,
+			fileDataBase64: fileAsBase64,
+		}),
+	});
 
-		if (error) {
-			lastError = error;
-			if ((error.message || "").toLowerCase().includes("bucket not found")) {
-				continue;
-			}
-			continue;
-		}
-
-		const { data } = supabaseClient.storage.from(bucketName).getPublicUrl(filePath);
-		return data?.publicUrl || null;
-	}
-
-	throw lastError || new Error("No se pudo subir el archivo");
+	currentProfile = response?.profile || currentProfile;
+	return response?.cvUrl || null;
 }
 
 async function onUploadCvClick() {
@@ -468,28 +500,6 @@ async function onUploadCvClick() {
 			throw new Error("No se obtuvo URL publica para el CV");
 		}
 
-		const payload = {
-			id: currentUser.id,
-			full_name: currentProfile?.full_name || getMetadataFullName(),
-			headline: currentProfile?.headline || profileHeadlineHeader?.textContent || "",
-			bio: biografiaInput?.value?.trim() || "",
-			location: ubicacionInput?.value || null,
-			avatar_url: currentProfile?.avatar_url || null,
-			cv_url: cvUrl,
-			role: currentProfile?.role || "Candidato",
-		};
-
-		const { data, error } = await supabaseClient
-			.from("profiles")
-			.upsert(payload, { onConflict: "id" })
-			.select()
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		currentProfile = data;
 		setCvPreview(cvUrl, isPdfUrl(cvUrl));
 
 		cvUploadMessage.className = "small text-success";
@@ -612,12 +622,14 @@ function renderSuggestedJobs() {
 async function loadAlertsAndJobs() {
 	try {
 		const [alertsResponse, jobsResponse] = await Promise.all([
-			fetchRowsByUser("alerts", ["user_id"], "created_at"),
-			supabaseClient.from("job_posts").select("*").order("created_at", { ascending: false }),
+			apiFetchJson("/alerts"),
+			apiFetchJson("/jobs"),
 		]);
 
-		alertRows = alertsResponse || [];
-		availableJobs = jobsResponse.data || [];
+		alertRows = (alertsResponse || []).filter(function (row) {
+			return row.user_id === currentUser.id;
+		});
+		availableJobs = jobsResponse || [];
 
 		alertKeywords = Array.from(
 			new Set(
@@ -658,13 +670,16 @@ async function onAddKeywordClick() {
 		user_id: currentUser.id,
 	};
 
-	const { data, error } = await supabaseClient.from("alerts").insert([payload]).select().single();
-	if (error) {
-		console.error("No se pudo guardar la alerta:", error);
-		return;
-	}
+	try {
+		const data = await apiFetchJson("/alerts", {
+			method: "POST",
+			body: JSON.stringify(payload),
+		});
 
-	alertRows.push(data);
+		alertRows.push(data);
+	} catch (error) {
+		console.error("No se pudo guardar la alerta:", error);
+	}
 }
 
 async function removeKeyword(keyword) {
@@ -683,8 +698,11 @@ async function removeKeyword(keyword) {
 		return;
 	}
 
-	const { error } = await supabaseClient.from("alerts").delete().eq("id", found.id);
-	if (error) {
+	try {
+		await apiFetchJson("/alerts/" + found.id, {
+			method: "DELETE",
+		});
+	} catch (error) {
 		console.error("No se pudo eliminar la alerta:", error);
 		return;
 	}
