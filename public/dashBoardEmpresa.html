@@ -71,7 +71,7 @@
       <!-- Main Content -->
       <div class="flex-grow-1 p-4" style="margin-left: 200px">
         <h5 class="fw-bold mb-1">Dashboard</h5>
-        <p class="text-muted small mb-4">Bienvenido al panel de empleador</p>
+        <p id="dashboardWelcome" class="text-muted small mb-4">Bienvenido al panel de empleador</p>
 
         <!-- Stat Cards -->
         <div class="row g-3 mb-4">
@@ -82,7 +82,7 @@
               >
                 <div>
                   <p class="text-muted small mb-1">Total Vacantes</p>
-                  <h3 class="fw-bold mb-0">12</h3>
+                  <h3 id="totalJobsCard" class="fw-bold mb-0">0</h3>
                 </div>
                 <div
                   class="bg-primary bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center p-2"
@@ -99,7 +99,7 @@
               >
                 <div>
                   <p class="text-muted small mb-1">Total Postulantes</p>
-                  <h3 class="fw-bold mb-0">156</h3>
+                  <h3 id="totalApplicantsCard" class="fw-bold mb-0">0</h3>
                 </div>
                 <div
                   class="bg-success bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center p-2"
@@ -116,7 +116,7 @@
               >
                 <div>
                   <p class="text-muted small mb-1">Vacantes Activas</p>
-                  <h3 class="fw-bold mb-0">9</h3>
+                  <h3 id="activeJobsCard" class="fw-bold mb-0">0</h3>
                 </div>
                 <div
                   class="bg-warning bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center p-2"
@@ -133,7 +133,7 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="fw-bold mb-0">Publicaciones recientes</h6>
-              <button class="btn btn-primary btn-sm">Nueva oferta</button>
+              <button id="newOfferBtn" class="btn btn-primary btn-sm">Nueva oferta</button>
             </div>
             <table class="table table-borderless align-middle">
               <thead class="border-bottom">
@@ -144,90 +144,9 @@
                   <th class="fw-semibold">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="border-bottom">
-                  <td class="small">Frontend Developer</td>
-                  <td>
-                    <span
-                      class="badge rounded-pill bg-success bg-opacity-10 text-success fw-normal"
-                      >Activa</span
-                    >
-                  </td>
-                  <td class="small">24</td>
-                  <td class="d-flex gap-1">
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Ver
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Editar
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm">
-                      Archivar
-                    </button>
-                  </td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="small">Backend Developer</td>
-                  <td>
-                    <span
-                      class="badge rounded-pill bg-success bg-opacity-10 text-success fw-normal"
-                      >Activa</span
-                    >
-                  </td>
-                  <td class="small">18</td>
-                  <td class="d-flex gap-1">
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Ver
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Editar
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm">
-                      Archivar
-                    </button>
-                  </td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="small">UX Designer</td>
-                  <td>
-                    <span
-                      class="badge rounded-pill bg-danger bg-opacity-10 text-danger fw-normal"
-                      >Cerrada</span
-                    >
-                  </td>
-                  <td class="small">31</td>
-                  <td class="d-flex gap-1">
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Ver
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Editar
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm">
-                      Archivar
-                    </button>
-                  </td>
-                </tr>
+              <tbody id="recentJobsTableBody">
                 <tr>
-                  <td class="small">Product Manager</td>
-                  <td>
-                    <span
-                      class="badge rounded-pill bg-success bg-opacity-10 text-success fw-normal"
-                      >Activa</span
-                    >
-                  </td>
-                  <td class="small">12</td>
-                  <td class="d-flex gap-1">
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Ver
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm">
-                      Editar
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm">
-                      Archivar
-                    </button>
-                  </td>
+                  <td colspan="4" class="text-center text-muted py-3">Cargando vacantes...</td>
                 </tr>
               </tbody>
             </table>
@@ -240,10 +159,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./js/compania.js"></script>
     <script src="./js/app.js"></script>
-    <script>
-      verificarSesionEmpresa().then((session) => {
-        if (session) actualizarNavbarEmpresa();
-      });
-    </script>
+    <script src="./js/dashboardEmpresa.js"></script>
   </body>
 </html>
