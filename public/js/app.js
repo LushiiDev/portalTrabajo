@@ -7,7 +7,10 @@ const supabaseClient = window.supabase.createClient(
 
 const path = window.location.pathname.toLowerCase();
 const isAuthPage = path.endsWith("/registrousuario.html");
+const isForosPage = path.endsWith("/foros.html");
+const isDetailPage = path.endsWith("/detalle.html");
 const isIndexPage = path.endsWith("/index.html") || path.endsWith("/public/");
+const isAppPage = isIndexPage || isForosPage || isDetailPage;
 const isDashboardEmpresa = path.endsWith("/dashboardempresa.html");
 
 function actualizarEstadoCampos(contenedor, habilitar) {
@@ -155,7 +158,7 @@ function initAuthPage() {
 
 if (isAuthPage) initAuthPage();
 
-if (isIndexPage) {
+if (isAppPage) {
   actualizarNavbarAuth();
   supabaseClient.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_IN" || event === "SIGNED_OUT") actualizarNavbarAuth();
