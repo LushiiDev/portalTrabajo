@@ -9,10 +9,14 @@ export const getAllReplies = async () => {
 };
 
 export const postforumReplies = async (
+  thread_id,
+  user_id,
   content,
   status
 ) => {
   const payload = {
+    thread_id,
+    user_id,
     content,
     status,
   };

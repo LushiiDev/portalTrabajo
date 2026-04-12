@@ -9,12 +9,14 @@ export const getAllThreads = async () => {
 };
 
 export const postforumThreads = async (
+  user_id,
   title,
   content,
   category,
   status
 ) => {
   const payload = {
+    user_id,
     title,
     content,
     category,
