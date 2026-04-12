@@ -374,21 +374,37 @@ function renderApplications(rows) {
 
 async function loadApplications() {
 	try {
-		const applications = await apiFetchJson("/applications");
-		const jobs = await apiFetchJson("/jobs");
+		const [applications, jobs, companies] = await Promise.all([
+			apiFetchJson("/applications"),
+			apiFetchJson("/jobs"),
+			apiFetchJson("/api/companies").catch(function () {
+				return [];
+			}),
+		]);
 
 		const jobMap = new Map((jobs || []).map(function (job) {
 			return [job.id, job];
 		}));
 
+		const companyMap = new Map((companies || []).map(function (company) {
+			return [company.id, company.name || company.razon_social || "Empresa"];
+		}));
+
 		const ownApplications = (applications || [])
 			.filter(function (application) {
-				return application.candidate_id === currentUser.id;
+				return (application.candidate_id || application.user_id) === currentUser.id;
 			})
 			.map(function (application) {
+				const jobPostId = application.job_post_id || application.job_id;
+				const relatedJob = jobMap.get(jobPostId) || null;
+				const companyName = relatedJob?.company_id
+					? companyMap.get(relatedJob.company_id) || "No disponible"
+					: "No disponible";
+
 				return {
 					...application,
-					job_posts: jobMap.get(application.job_post_id) || null,
+					job_posts: relatedJob,
+					company_name: application.company_name || companyName,
 				};
 			})
 			.sort(function (a, b) {
