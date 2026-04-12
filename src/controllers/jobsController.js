@@ -9,6 +9,16 @@ export const getObtenerTodosLosTrabajos = async (req, res, next) => {
   }
 };
 
+export const getObtenerTrabajoPorId = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const job = await jobsService.getJobById(id);
+    res.json(job);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const postPublicarTrabajo = async (req, res, next) => {
   try {
     const {
