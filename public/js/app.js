@@ -176,7 +176,7 @@ function initAuthPage() {
         return;
       }
 
-      window.location.href = "./index.html";
+      window.location.href = document.referrer || "./index.html";
     });
   }
 }

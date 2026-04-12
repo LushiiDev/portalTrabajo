@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trabajos - ChambaHub</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+  </head>
+  <body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+      <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center w-100">
+
+          <a class="navbar-brand flex-shrink-0" href="index.html">
+            <img src="../img/LogoEmpresa.png" alt="ChambaHub" width="150" height="50" />
+          </a>
+
+          <ul class="navbar-nav mb-2 mb-lg-0 flex-grow-1 justify-content-center">
+            <li class="nav-item">
+              <a class="nav-link active" href="trabajos.html">Trabajos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Recursos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Foros</a>
+            </li>
+          </ul>
+
+          <div class="d-flex flex-shrink-0 align-items-center gap-2">
+
+
+            <div id="authActions">
+              <a class="btn btn-outline-info me-2" href="registroUsuario.html">Registrarse</a>
+              <a class="btn btn-primary" href="registroUsuario.html">Iniciar sesión</a>
+            </div>
+
+            <!-- Con sesión -->
+            <div id="userMenu" class="dropdown d-none">
+              <button
+                class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="bi bi-person-circle"></i>
+                <span id="userEmailLabel">Usuario</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="bi bi-person me-2"></i>Perfil
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="bi bi-gear me-2"></i>Configuración
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button id="logoutBtn" class="dropdown-item text-danger" type="button">
+                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CONTENIDO -->
+    <div class="container my-4">
+      <div class="row g-4">
+
+        <!-- SIDEBAR FILTROS -->
+        <div class="col-lg-3">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h6 class="fw-bold mb-3">Filtros</h6>
+
+              <!-- Tipo de trabajo -->
+              <p class="fw-semibold small mb-2">Tipo de trabajo</p>
+              <div class="form-check">
+                <input class="form-check-input filter-contract" type="checkbox" value="full-time" id="chkFull" />
+                <label class="form-check-label small" for="chkFull">Full-time</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input filter-contract" type="checkbox" value="part-time" id="chkPart" />
+                <label class="form-check-label small" for="chkPart">Part-time</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input filter-contract" type="checkbox" value="remote" id="chkRemote" />
+                <label class="form-check-label small" for="chkRemote">Remote</label>
+              </div>
+
+              <hr />
+
+              <!-- Nivel de experiencia -->
+              <p class="fw-semibold small mb-2">Nivel de experiencia</p>
+              <div class="form-check">
+                <input class="form-check-input filter-exp" type="checkbox" value="junior" id="chkJr" />
+                <label class="form-check-label small" for="chkJr">Junior</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input filter-exp" type="checkbox" value="mid" id="chkMid" />
+                <label class="form-check-label small" for="chkMid">Mid-level</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input filter-exp" type="checkbox" value="senior" id="chkSr" />
+                <label class="form-check-label small" for="chkSr">Senior</label>
+              </div>
+
+              <hr />
+
+              <!-- Rango salarial -->
+              <p class="fw-semibold small mb-2">
+                Salario máximo: <span id="salaryLabel">$100k</span>
+              </p>
+              <input type="range" class="form-range mb-3" min="0" max="100" value="100" id="salaryRange" />
+
+              <button class="btn btn-primary w-100 btn-sm mb-2" id="btnFiltrar">
+                Aplicar filtros
+              </button>
+              <button class="btn btn-outline-secondary w-100 btn-sm" id="btnLimpiar">
+                Limpiar filtros
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTA DE TRABAJOS -->
+        <div class="col-lg-9">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Ofertas de empleo</h5>
+            <span class="text-muted small" id="resultsCount">Cargando...</span>
+          </div>
+
+          <!-- Spinner -->
+        <p class="text-muted small d-none" id="loadingSpinner">Buscando ofertas...</p>
+
+          <!-- Sin resultados -->
+          <div class="text-center my-5 d-none" id="noResults">
+            <i class="bi bi-search fs-1 text-muted"></i>
+            <p class="text-muted mt-2">No se encontraron ofertas con esos filtros.</p>
+          </div>
+
+          <!-- Error -->
+          <div class="alert alert-danger d-none" id="errorMsg">
+            No se pudo conectar con el servidor. Verifica que la API esté corriendo.
+          </div>
+
+          <!-- Cards generadas por trabajos.js -->
+          <div id="jobList"></div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-light border-top mt-5">
+      <div class="container py-5">
+        <div class="row align-items-start gy-4">
+
+          <div class="col-md-4 text-center text-md-start">
+            <a class="d-inline-block mb-3" href="#">
+              <img src="../img/LogoEmpresa.png" alt="ChambaHub" width="170" />
+            </a>
+            <p class="mb-0 text-muted">Tu portal de empleo profesional</p>
+          </div>
+
+          <div class="col-md-4">
+            <h6 class="mb-3">Enlaces</h6>
+            <ul class="list-unstyled mb-0">
+              <li><a class="text-decoration-none text-muted" href="#">Buscar Empleos</a></li>
+              <li><a class="text-decoration-none text-muted" href="#">Recursos</a></li>
+              <li><a class="text-decoration-none text-muted" href="#">Sobre Nosotros</a></li>
+            </ul>
+          </div>
+
+          <div class="col-md-4 text-center text-md-start">
+            <h6 class="mb-3">Contacto</h6>
+            <p class="mb-0 text-muted">info@chambahub.com</p>
+          </div>
+
+        </div>
+        <div class="border-top pt-3 mt-4 text-center text-muted small">
+          © 2026 ChambaHub. Todos los derechos reservados.
+        </div>
+      </div>
+    </footer>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/trabajos.js"></script>
+
+  </body>
+</html>
