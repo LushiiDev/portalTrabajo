@@ -1,5 +1,6 @@
 const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
+const API_BASE_URL = "http://127.0.0.1:3000";
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
@@ -19,6 +20,43 @@ function actualizarEstadoCampos(contenedor, habilitar) {
     input.disabled = !habilitar;
     input.required = habilitar;
   });
+}
+
+// ─── Crear perfil de usuario en el backend ─────────────────────────────────
+
+async function crearPerfilUsuario(userId, nombre, apellido) {
+  try {
+    const payload = {
+      id: userId,
+      full_name: `${nombre} ${apellido}`,
+      headline: "",
+      bio: "",
+      location: "",
+      avatar_url: "",
+      cv_url: "",
+      role: ""
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/profiles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error response:", errorText);
+      return false;
+    }
+
+    await response.json();
+    return true;
+  } catch (err) {
+    console.error("Error al conectar con el backend:", err);
+    return false;
+  }
 }
 
 async function actualizarNavbarAuth() {
@@ -109,6 +147,9 @@ function initAuthPage() {
 
       if (error) { alert("Error al registrarte: " + error.message); return; }
       if (data?.user) {
+        // Crear perfil en el backend
+        await crearPerfilUsuario(data.user.id, nombre, apellido);
+        
         alert("Registro exitoso. Revisa tu correo para confirmar la cuenta.");
         registroForm.reset();
       } else {

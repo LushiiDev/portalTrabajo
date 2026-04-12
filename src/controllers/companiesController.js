@@ -24,13 +24,13 @@ export const postCrearEmpresa = async (req, res, next) => {
     const {
       user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     } = req.body;
 
     const newCompany = await companiesService.createCompany(
       user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     );
 
     res.status(201).json(newCompany);
@@ -45,13 +45,13 @@ export const putActualizarEmpresa = async (req, res, next) => {
     const {
       user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     } = req.body;
 
     const updatedCompany = await companiesService.updateCompany(
       id, user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     );
 
     res.status(200).json(updatedCompany);

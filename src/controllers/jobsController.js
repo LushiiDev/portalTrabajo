@@ -12,22 +12,26 @@ export const getObtenerTodosLosTrabajos = async (req, res, next) => {
 export const postPublicarTrabajo = async (req, res, next) => {
   try {
     const {
+      company_id,
       title,
       description,
       location,
       salaryMin,
       salaryMax,
       contractType,
+      workMode,
       experienceLevel,
     } = req.body;
 
     const newJob = await jobsService.postPublicJob(
+      company_id,
       title,
       description,
       location,
       salaryMin,
       salaryMax,
       contractType,
+      workMode,
       experienceLevel,
     );
     res.json(newJob);

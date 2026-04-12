@@ -21,21 +21,25 @@ export const getJobByTitle = async (nombre) => {
 };
 
 export const postPublicJob = async (
+  company_id,
   title,
   description,
   location,
   salaryMin,
   salaryMax,
   contractType,
+  workMode,
   experienceLevel,
 ) => {
   const payload = {
+    company_id,
     title,
     description,
     location,
     salary_min: salaryMin,
     salary_max: salaryMax,
     contract_type: contractType,
+    work_mode: workMode,
     experience_level: experienceLevel,
   };
 

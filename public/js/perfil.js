@@ -1,7 +1,9 @@
 const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const API_BASE_URL = "http://localhost:3000";
+if (typeof API_BASE_URL === 'undefined') {
+  var API_BASE_URL = "http://127.0.0.1:3000";
+}
 
 const ACTIVE_TAB_KEY = "perfilActiveTabId";
 
