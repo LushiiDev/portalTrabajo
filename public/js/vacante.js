@@ -5,6 +5,14 @@ let profilesById = new Map();
 let editJobModalInstance = null;
 let applicationsModalInstance = null;
 
+const APPLICATION_STATUS_OPTIONS = [
+  { value: "pendiente", label: "Pendiente" },
+  { value: "en_revision", label: "En revision" },
+  { value: "entrevista", label: "Entrevista" },
+  { value: "aceptado", label: "Aceptado" },
+  { value: "rechazado", label: "Rechazado" },
+];
+
 function formatDateEs(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -68,9 +76,27 @@ function getApplicantsByJobId() {
 }
 
 function normalizeApplicationStatus(rawStatus) {
-  const status = (rawStatus || "pendiente").toString().trim();
+  const status = (rawStatus || "pendiente").toString().trim().replace(/_/g, " ");
   if (!status) return "Pendiente";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function sanitizeStatusValue(rawStatus) {
+  return (rawStatus || "pendiente").toString().trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function buildApplicationStatusSelect(applicationId, rawStatus) {
+  const selectedStatus = sanitizeStatusValue(rawStatus);
+  const optionsHtml = APPLICATION_STATUS_OPTIONS.map((option) => {
+    const selected = option.value === selectedStatus ? " selected" : "";
+    return `<option value="${option.value}"${selected}>${option.label}</option>`;
+  }).join("");
+
+  return `
+    <select class="form-select form-select-sm" data-role="application-status" data-application-id="${applicationId}">
+      ${optionsHtml}
+    </select>
+  `;
 }
 
 function getCandidateLabel(candidateId) {
@@ -78,6 +104,22 @@ function getCandidateLabel(candidateId) {
   const profile = profilesById.get(candidateId);
   if (profile?.full_name) return profile.full_name;
   return candidateId;
+}
+
+function getCandidateCvUrl(application) {
+  if (!application) return "";
+
+  if (application.cv_url) {
+    return application.cv_url;
+  }
+
+  const candidateId = application.candidate_id || application.user_id;
+  if (!candidateId) {
+    return "";
+  }
+
+  const profile = profilesById.get(candidateId);
+  return profile?.cv_url || "";
 }
 
 function getFilteredJobs() {
@@ -237,6 +279,57 @@ function setupApplicationsModal() {
   if (!modalElement || !window.bootstrap?.Modal) return;
 
   applicationsModalInstance = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+
+  const tableBody = document.getElementById("applicationsTableBody");
+  if (!tableBody) return;
+
+  tableBody.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+
+    const action = target.dataset.action;
+    if (action !== "update-application-status") return;
+
+    const applicationId = target.dataset.applicationId;
+    const jobId = target.dataset.jobId;
+    if (!applicationId || !jobId) return;
+
+    const row = target.closest("tr");
+    const statusSelect = row?.querySelector('select[data-role="application-status"]');
+    const nextStatus = statusSelect?.value || "pendiente";
+    const currentStatus = sanitizeStatusValue(target.dataset.currentStatus || "pendiente");
+
+    if (sanitizeStatusValue(nextStatus) === currentStatus) {
+      return;
+    }
+
+    target.disabled = true;
+    const originalText = target.textContent;
+    target.textContent = "Guardando...";
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/applications/${applicationId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: sanitizeStatusValue(nextStatus) }),
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo actualizar el estado de la postulacion");
+      }
+
+      await openApplicationsModal(jobId);
+      renderTable();
+      alert("Estado de postulacion actualizado.");
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo actualizar el estado de la postulacion.");
+      target.disabled = false;
+      target.textContent = originalText || "Guardar";
+    }
+  });
 }
 
 async function openApplicationsModal(jobId) {
@@ -257,7 +350,7 @@ async function openApplicationsModal(jobId) {
 
   tableBody.innerHTML = `
     <tr>
-      <td colspan="4" class="text-center text-muted py-3">Cargando postulaciones...</td>
+      <td colspan="5" class="text-center text-muted py-3">Cargando postulaciones...</td>
     </tr>
   `;
 
@@ -268,13 +361,16 @@ async function openApplicationsModal(jobId) {
   await loadApplications();
 
   const rows = allApplications
-    .filter((application) => application?.job_post_id === jobId)
-    .sort((a, b) => new Date(b.applied_at || 0) - new Date(a.applied_at || 0));
+    .filter((application) => {
+      const applicationJobId = application?.job_post_id || application?.job_id;
+      return String(applicationJobId) === String(jobId);
+    })
+    .sort((a, b) => new Date(b.applied_at || b.created_at || 0) - new Date(a.applied_at || a.created_at || 0));
 
   if (rows.length === 0) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="4" class="text-center text-muted py-3">Aun no hay postulaciones para esta vacante.</td>
+        <td colspan="5" class="text-center text-muted py-3">Aun no hay postulaciones para esta vacante.</td>
       </tr>
     `;
     return;
@@ -282,17 +378,32 @@ async function openApplicationsModal(jobId) {
 
   tableBody.innerHTML = rows
     .map((application) => {
-      const candidate = getCandidateLabel(application.candidate_id);
-      const cvCell = application.cv_url
-        ? `<a href="${application.cv_url}" target="_blank" rel="noopener noreferrer">Ver CV</a>`
+      const candidateId = application.candidate_id || application.user_id;
+      const candidate = getCandidateLabel(candidateId);
+      const cvUrl = getCandidateCvUrl(application);
+      const cvCell = cvUrl
+        ? `<a href="${cvUrl}" target="_blank" rel="noopener noreferrer">Ver CV</a>`
         : "Sin CV";
+      const normalizedStatus = sanitizeStatusValue(application.status);
+      const statusControl = buildApplicationStatusSelect(application.id, normalizedStatus);
 
       return `
         <tr>
           <td>${candidate}</td>
           <td>${cvCell}</td>
-          <td>${normalizeApplicationStatus(application.status)}</td>
-          <td>${formatDateEs(application.applied_at)}</td>
+          <td>${statusControl}</td>
+          <td>${formatDateEs(application.applied_at || application.created_at)}</td>
+          <td>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              data-action="update-application-status"
+              data-application-id="${application.id}"
+              data-job-id="${jobId}"
+              data-current-status="${normalizedStatus}"
+            >
+              Guardar
+            </button>
+          </td>
         </tr>
       `;
     })

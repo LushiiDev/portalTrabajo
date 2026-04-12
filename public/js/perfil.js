@@ -320,6 +320,39 @@ function mapStatusBadgeClass(statusValue) {
 	return "secondary";
 }
 
+function formatApplicationStatus(statusValue) {
+	const normalized = String(statusValue || "pendiente").trim().toLowerCase();
+
+	if (normalized === "en_revision") {
+		return "En revision";
+	}
+
+	if (normalized === "aceptado") {
+		return "Aceptado";
+	}
+
+	if (normalized === "rechazado") {
+		return "Rechazado";
+	}
+
+	if (normalized === "entrevista") {
+		return "Entrevista";
+	}
+
+	if (normalized === "pendiente") {
+		return "Pendiente";
+	}
+
+	return normalized
+		.replace(/_/g, " ")
+		.split(" ")
+		.filter(Boolean)
+		.map(function (part) {
+			return part.charAt(0).toUpperCase() + part.slice(1);
+		})
+		.join(" ");
+}
+
 function formatDate(dateValue) {
 	if (!dateValue) {
 		return "-";
@@ -360,13 +393,14 @@ function renderApplications(rows) {
 		const modality = jobData?.contract_type || application.modality || application.contract_type || "-";
 		const status = application.status || "pendiente";
 		const badgeClass = mapStatusBadgeClass(status);
+		const statusLabel = formatApplicationStatus(status);
 
 		row.innerHTML =
 			"<td>" + title + "</td>" +
 			"<td>" + company + "</td>" +
 			"<td>" + date + "</td>" +
 			"<td>" + modality + "</td>" +
-			'<td><span class="badge text-bg-' + badgeClass + '">' + status + "</span></td>";
+			'<td><span class="badge text-bg-' + badgeClass + '">' + statusLabel + "</span></td>";
 
 		applicationsTableBody.appendChild(row);
 	});
