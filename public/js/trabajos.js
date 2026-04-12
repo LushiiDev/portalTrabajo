@@ -2,9 +2,34 @@ const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://127.0.0.1:3000";
 
 let todosLosJobs = [];
+let searchQuery = "";
+let searchLocation = "";
+
+function readSearchParams() {
+  const params = new URLSearchParams(window.location.search);
+  searchQuery = (params.get("q") || "").trim().toLowerCase();
+  searchLocation = (params.get("location") || "").trim().toLowerCase();
+}
+
+function applyIndexSearchFilters(jobs) {
+  return jobs.filter((job) => {
+    const title = (job.title || "").toLowerCase();
+    const description = (job.description || "").toLowerCase();
+    const location = (job.location || "").toLowerCase();
+
+    const matchesQuery =
+      !searchQuery ||
+      title.includes(searchQuery) ||
+      description.includes(searchQuery);
+
+    const matchesLocation = !searchLocation || location.includes(searchLocation);
+
+    return matchesQuery && matchesLocation;
+  });
+}
 
 async function actualizarNavbarAuth() {
   const authActions    = document.getElementById("authActions");
@@ -100,7 +125,8 @@ async function cargarJobs() {
     const res = await fetch(`${API_BASE}/jobs`);
     if (!res.ok) throw new Error("Error al obtener trabajos");
     todosLosJobs = await res.json();
-    renderJobs(todosLosJobs);
+    const jobsFiltradosIniciales = applyIndexSearchFilters(todosLosJobs);
+    renderJobs(jobsFiltradosIniciales);
   } catch (err) {
     console.error(err);
   }
@@ -111,11 +137,12 @@ document.getElementById("salaryRange").addEventListener("input", function () {
 });
 
 document.getElementById("btnFiltrar").addEventListener("click", () => {
+  const base = applyIndexSearchFilters(todosLosJobs);
   const contratos = [...document.querySelectorAll(".filter-contract:checked")].map((c) => c.value.toLowerCase());
   const exps      = [...document.querySelectorAll(".filter-exp:checked")].map((c) => c.value.toLowerCase());
   const salMax    = parseInt(document.getElementById("salaryRange").value) * 1000;
 
-  let filtrados = todosLosJobs;
+  let filtrados = base;
 
   if (contratos.length > 0) {
     filtrados = filtrados.filter((job) =>
@@ -138,9 +165,10 @@ document.getElementById("btnLimpiar").addEventListener("click", () => {
   document.querySelectorAll(".filter-contract, .filter-exp").forEach((c) => (c.checked = false));
   document.getElementById("salaryRange").value = 100;
   document.getElementById("salaryLabel").textContent = "$100k";
-  renderJobs(todosLosJobs);
+  renderJobs(applyIndexSearchFilters(todosLosJobs));
 });
 
+readSearchParams();
 actualizarNavbarAuth();
 cargarJobs();
 

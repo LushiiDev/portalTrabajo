@@ -88,34 +88,37 @@
         >
           <p class="card-title h1">Encuentra tu próximo empleo</p>
           <p class="card-title">Miles de oportunidades esperando por ti</p>
-          <div
+          <form
+            id="homeSearchForm"
             class="d-flex justify-content-center align-items-center gap-3 mt-4"
           >
             <input
+              id="homeSearchKeyword"
               class="form-control form-control-sm"
               type="text"
               placeholder="Palabra clave, título, empresa"
               aria-label=".form-control-sm example"
             />
-            <select class="form-select" aria-label="Default select example">
-              <option selected></option>
-              <option value="1">San Salvador</option>
-              <option value="2">Santa Ana</option>
-              <option value="3">Ahuachapán</option>
-              <option value="4">Sonsonate</option>
-              <option value="5">La Libertad</option>
-              <option value="6">Cuscatlán</option>
-              <option value="7">La Paz</option>
-              <option value="8">Cabañas</option>
-              <option value="9">San Vicente</option>
-              <option value="10">Usulután</option>
-              <option value="11">Morazán</option>
-              <option value="12">San Miguel</option>
-              <option value="13">La Unión</option>
-              <option value="14">Chalatenango</option>
+            <select id="homeSearchLocation" class="form-select" aria-label="Default select example">
+              <option value="" selected>Todas las ubicaciones</option>
+              <option value="San Salvador">San Salvador</option>
+              <option value="Santa Ana">Santa Ana</option>
+              <option value="Ahuachapán">Ahuachapán</option>
+              <option value="Sonsonate">Sonsonate</option>
+              <option value="La Libertad">La Libertad</option>
+              <option value="Cuscatlán">Cuscatlán</option>
+              <option value="La Paz">La Paz</option>
+              <option value="Cabañas">Cabañas</option>
+              <option value="San Vicente">San Vicente</option>
+              <option value="Usulután">Usulután</option>
+              <option value="Morazán">Morazán</option>
+              <option value="San Miguel">San Miguel</option>
+              <option value="La Unión">La Unión</option>
+              <option value="Chalatenango">Chalatenango</option>
             </select>
             <button
-              type="button"
+              type="submit"
+              id="homeSearchBtn"
               class="btn btn-primary mt-4 fw-semibold"
               style="
                 --bs-btn-padding-y: 0.75rem;
@@ -125,7 +128,7 @@
             >
               Buscar
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </section>
@@ -228,5 +231,6 @@
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./js/app.js"></script>
+<script src="./js/indexSearch.js"></script>
   </body>
 </html>
