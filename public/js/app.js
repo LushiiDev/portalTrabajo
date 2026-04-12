@@ -11,6 +11,7 @@ const isForosPage = path.endsWith("/foros.html");
 const isDetailPage = path.endsWith("/detalle.html");
 const isIndexPage = path.endsWith("/index.html") || path.endsWith("/public/");
 const isAppPage = isIndexPage || isForosPage || isDetailPage;
+const isDashboardEmpresa = path.endsWith("/dashboardempresa.html");
 
 function actualizarEstadoCampos(contenedor, habilitar) {
   const inputs = contenedor.querySelectorAll("input, select, textarea");
@@ -18,13 +19,6 @@ function actualizarEstadoCampos(contenedor, habilitar) {
     input.disabled = !habilitar;
     input.required = habilitar;
   });
-}
-
-async function validarSesionEnIndex() {
-  const { data, error } = await supabaseClient.auth.getSession();
-  if (error || !data.session) {
-    window.location.href = "./registroUsuario.html";
-  }
 }
 
 async function actualizarNavbarAuth() {
@@ -47,8 +41,9 @@ async function actualizarNavbarAuth() {
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
-  const email = session.user?.email || "Usuario";
-  if (userEmailLabel) userEmailLabel.textContent = email;
+  const meta = session.user?.user_metadata || {};
+  const label = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
+  if (userEmailLabel) userEmailLabel.textContent = label;
 
   if (logoutBtn) {
     logoutBtn.onclick = async () => {
@@ -72,63 +67,47 @@ function initAuthPage() {
       actualizarEstadoCampos(camposUsuario, esUsuario);
       actualizarEstadoCampos(camposEmpresa, !esUsuario);
     }
-
     regUsuario.addEventListener("change", actualizarCamposRegistro);
     regEmpresa.addEventListener("change", actualizarCamposRegistro);
     actualizarCamposRegistro();
   }
 
+  // ── REGISTRO ──────────────────────────────────────────────────────────────
   const registroForm = document.getElementById("registroForm");
   if (registroForm) {
     registroForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const formData = new FormData(registroForm);
 
-      if (regUsuario && !regUsuario.checked) {
-        alert("Por ahora solo está habilitado el registro de Usuario.");
+      if (regEmpresa && regEmpresa.checked) {
+        const ok = await registrarEmpresa(formData);
+        if (ok) registroForm.reset();
         return;
       }
 
-      const formData = new FormData(registroForm);
-      const nombre = (formData.get("nombre") || "").trim();
+      const nombre   = (formData.get("nombre")   || "").trim();
       const apellido = (formData.get("apellido") || "").trim();
-      const email = (formData.get("email") || "").trim();
-      const password = formData.get("password") || "";
+      const email    = (formData.get("email")    || "").trim();
+      const password = formData.get("password")  || "";
       const confirmar = formData.get("confirmar") || "";
-      const terminos = formData.get("terminos");
+      const terminos  = formData.get("terminos");
 
       if (!nombre || !apellido || !email || !password || !confirmar) {
-        alert("Completa todos los campos obligatorios.");
-        return;
+        alert("Completa todos los campos obligatorios."); return;
       }
-
-      if (password !== confirmar) {
-        alert("Las contraseñas no coinciden.");
-        return;
-      }
-
-      if (!terminos) {
-        alert("Debes aceptar los términos y condiciones.");
-        return;
-      }
+      if (password !== confirmar) { alert("Las contraseñas no coinciden."); return; }
+      if (password.length < 6)   { alert("La contraseña debe tener al menos 6 caracteres."); return; }
+      if (!terminos)              { alert("Debes aceptar los términos y condiciones."); return; }
 
       const { data, error } = await supabaseClient.auth.signUp({
-        email,
-        password,
+        email, password,
         options: {
-          emailRedirectTo: "http://127.0.0.1:5500/public/registroUsuario.html",
-          data: {
-            tipo_cuenta: "usuario",
-            nombre,
-            apellido,
-          },
+          emailRedirectTo: window.location.href,
+          data: { tipo_cuenta: "usuario", nombre, apellido },
         },
       });
 
-      if (error) {
-        alert("Error al registrarte: " + error.message);
-        return;
-      }
-
+      if (error) { alert("Error al registrarte: " + error.message); return; }
       if (data?.user) {
         alert("Registro exitoso. Revisa tu correo para confirmar la cuenta.");
         registroForm.reset();
@@ -138,44 +117,37 @@ function initAuthPage() {
     });
   }
 
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
   const loginForm = document.getElementById("loginForm");
-  const loginUsuario = document.getElementById("loginUsuario");
-  const loginEmpresa = document.getElementById("loginEmpresa");
+  // ⚠️ Renombradas para no pisar las funciones de compania.js
+  const radioLoginUsuario = document.getElementById("loginUsuario");
+  const radioLoginEmpresa = document.getElementById("loginEmpresa");
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const formData = new FormData(loginForm);
-      const email = (formData.get("email") || "").trim();
-      const password = formData.get("password") || "";
+      const email    = (formData.get("email")    || "").trim();
+      const password = formData.get("password")  || "";
 
-      if (!email || !password) {
-        alert("Completa correo y contraseña.");
+      if (!email || !password) { alert("Completa correo y contraseña."); return; }
+
+      // Login EMPRESA → función loginEmpresa() viene de compania.js
+      if (radioLoginEmpresa && radioLoginEmpresa.checked) {
+        await loginEmpresa(email, password);
         return;
       }
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Login USUARIO
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
-      if (error) {
-        alert("Error al iniciar sesión: " + error.message);
-        return;
-      }
+      if (error) { alert("Error al iniciar sesión: " + error.message); return; }
 
       const tipoCuenta = data?.user?.user_metadata?.tipo_cuenta || "usuario";
 
-      if (loginEmpresa && loginEmpresa.checked && tipoCuenta !== "empresa") {
+      if (tipoCuenta === "empresa") {
         await supabaseClient.auth.signOut();
-        alert("Esta cuenta no es de tipo empresa.");
-        return;
-      }
-
-      if (loginUsuario && loginUsuario.checked && tipoCuenta !== "usuario") {
-        await supabaseClient.auth.signOut();
-        alert("Esta cuenta no es de tipo usuario.");
+        alert("Esta cuenta es de una Empresa. Selecciona 'Empresa' para iniciar sesión.");
         return;
       }
 
@@ -184,16 +156,15 @@ function initAuthPage() {
   }
 }
 
-if (isAuthPage) {
-  initAuthPage();
-}
+if (isAuthPage) initAuthPage();
 
 if (isAppPage) {
   actualizarNavbarAuth();
-
   supabaseClient.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-      actualizarNavbarAuth();
-    }
+    if (event === "SIGNED_IN" || event === "SIGNED_OUT") actualizarNavbarAuth();
   });
+}
+
+if (isDashboardEmpresa) {
+  actualizarNavbarEmpresa();
 }
