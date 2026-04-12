@@ -80,8 +80,15 @@ async function actualizarNavbarAuth() {
   userMenu.classList.remove("d-none");
 
   const meta = session.user?.user_metadata || {};
+  const tipoCuenta = meta.tipo_cuenta || "usuario";
   const label = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
   if (userEmailLabel) userEmailLabel.textContent = label;
+
+  const profileIcon = userMenu.querySelector(".dropdown-menu .bi-person");
+  const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
+  if (profileLink) {
+    profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
+  }
 
   if (logoutBtn) {
     logoutBtn.onclick = async () => {

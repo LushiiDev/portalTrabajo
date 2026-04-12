@@ -49,8 +49,17 @@ async function actualizarNavbarAuth() {
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
+  const meta = session.user?.user_metadata || {};
+  const tipoCuenta = meta.tipo_cuenta || "usuario";
+
   if (userEmailLabel) {
     userEmailLabel.textContent = session.user?.email || "Usuario";
+  }
+
+  const profileIcon = userMenu.querySelector(".dropdown-menu .bi-person");
+  const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
+  if (profileLink) {
+    profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
   }
 
   if (logoutBtn) {
