@@ -48,18 +48,15 @@ function getBadgeClass(contractType) {
 function renderJobs(jobs) {
   const lista    = document.getElementById("jobList");
   const noResult = document.getElementById("noResults");
-  const count    = document.getElementById("resultsCount");
 
   lista.innerHTML = "";
 
   if (jobs.length === 0) {
     noResult.classList.remove("d-none");
-    count.textContent = "0 resultados";
     return;
   }
 
   noResult.classList.add("d-none");
-  count.textContent = `Mostrando ${jobs.length} resultado${jobs.length !== 1 ? "s" : ""}`;
 
   jobs.forEach((job) => {
     const salMin  = job.salary_min ? `$${job.salary_min / 1000}k` : null;
@@ -71,7 +68,6 @@ function renderJobs(jobs) {
     card.className = "card mb-3 shadow-sm";
     card.innerHTML = `
       <div class="card-body d-flex align-items-center gap-3">
-
         <div class="flex-grow-1">
           <h6 class="mb-0 fw-bold">${job.title || "Sin título"}</h6>
           <small class="text-muted d-block mb-1">${job.location || "Ubicación no especificada"}</small>
@@ -79,21 +75,15 @@ function renderJobs(jobs) {
             <small class="text-muted">
               <i class="bi bi-cash"></i> ${salario}
             </small>
-            ${job.contract_type
-              ? `<span class="badge ${badge}" style="font-size:0.75rem;">${job.contract_type}</span>`
-              : ""}
-            ${job.experience_level
-              ? `<span class="badge bg-light text-dark border" style="font-size:0.75rem;">${job.experience_level}</span>`
-              : ""}
+            ${job.contract_type ? `<span class="badge ${badge}" style="font-size:0.75rem;">${job.contract_type}</span>` : ""}
+            ${job.experience_level ? `<span class="badge bg-light text-dark border" style="font-size:0.75rem;">${job.experience_level}</span>` : ""}
           </div>
         </div>
-
         <div class="flex-shrink-0">
-          <button class="btn btn-primary btn-sm" onclick="verOferta(${job.id})">
+          <button class="btn btn-primary btn-sm" onclick="verOferta('${job.id}')">
             Ver Oferta
           </button>
         </div>
-
       </div>
     `;
     lista.appendChild(card);
@@ -102,13 +92,10 @@ function renderJobs(jobs) {
 
 function verOferta(jobId) {
   sessionStorage.setItem("jobId", jobId);
-  window.location.href = `informacion_empleo.html?id=${jobId}`;
+  window.location.href = `informacionEmpleo.html?id=${jobId}`;
 }
 
 async function cargarJobs() {
-  const errorMsg = document.getElementById("errorMsg");
-  errorMsg.classList.add("d-none");
-
   try {
     const res = await fetch(`${API_BASE}/jobs`);
     if (!res.ok) throw new Error("Error al obtener trabajos");
@@ -116,8 +103,6 @@ async function cargarJobs() {
     renderJobs(todosLosJobs);
   } catch (err) {
     console.error(err);
-    document.getElementById("resultsCount").textContent = "Error al cargar";
-    errorMsg.classList.remove("d-none");
   }
 }
 
