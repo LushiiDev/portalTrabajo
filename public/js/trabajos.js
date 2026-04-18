@@ -7,6 +7,7 @@ const API_BASE = "http://127.0.0.1:3000";
 let todosLosJobs = [];
 let searchQuery = "";
 let searchLocation = "";
+let companiesById = new Map();
 
 function normalizeFilterValue(value) {
   return String(value || "")
@@ -32,6 +33,24 @@ function formatSalaryValue(value) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(numericValue);
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getCompanyDisplay(companyId) {
+  const company = companiesById.get(companyId) || null;
+
+  return {
+    name: company?.name || "Empresa",
+    logoUrl: company?.logo_url || "",
+  };
 }
 
 function readSearchParams() {
@@ -133,14 +152,28 @@ function renderJobs(jobs) {
     const salMax = formatSalaryValue(job.salary_max);
     const salario = salMin && salMax ? `${salMin} - ${salMax}` : salMin || salMax || "A convenir";
     const badge   = getBadgeClass(job.contract_type);
+    const company = getCompanyDisplay(job.company_id);
+    const companyName = escapeHtml(company.name);
+    const companyLogoHtml = company.logoUrl
+      ? `<img src="${escapeHtml(company.logoUrl)}" alt="${companyName}" class="rounded-circle border bg-white flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" />`
+      : `<div class="rounded-circle border bg-white d-flex align-items-center justify-content-center flex-shrink-0 text-muted" style="width: 42px; height: 42px;"><i class="bi bi-building"></i></div>`;
 
     const card = document.createElement("div");
     card.className = "card mb-3 shadow-sm";
     card.innerHTML = `
       <div class="card-body d-flex align-items-center gap-3">
-        <div class="flex-grow-1">
-          <h6 class="mb-0 fw-bold">${job.title || "Sin título"}</h6>
-          <small class="text-muted d-block mb-1">${job.location || "Ubicación no especificada"}</small>
+        <div class="flex-shrink-0 d-none d-sm-flex align-items-center justify-content-center">
+          ${companyLogoHtml}
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <h6 class="mb-0 fw-bold text-truncate">${job.title || "Sin título"}</h6>
+          <div class="d-flex align-items-center gap-2 text-muted small mb-1 flex-wrap">
+            <span class="d-inline-flex align-items-center gap-1 text-truncate">
+              <span class="fw-medium text-body">${companyName}</span>
+            </span>
+            <span class="text-muted">·</span>
+            <span class="text-truncate">${job.location || "Ubicación no especificada"}</span>
+          </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <small class="text-muted">
               <i class="bi bi-cash"></i> ${salario}
@@ -167,9 +200,17 @@ function verOferta(jobId) {
 
 async function cargarJobs() {
   try {
-    const res = await fetch(`${API_BASE}/jobs`);
-    if (!res.ok) throw new Error("Error al obtener trabajos");
-    todosLosJobs = await res.json();
+    const [jobsRes, companiesRes] = await Promise.all([
+      fetch(`${API_BASE}/jobs`),
+      fetch(`${API_BASE}/api/companies`),
+    ]);
+
+    if (!jobsRes.ok) throw new Error("Error al obtener trabajos");
+
+    const companies = companiesRes.ok ? await companiesRes.json() : [];
+    companiesById = new Map((companies || []).map((company) => [company.id, company]));
+
+    todosLosJobs = await jobsRes.json();
     const jobsFiltradosIniciales = applyIndexSearchFilters(todosLosJobs);
     renderJobs(jobsFiltradosIniciales);
   } catch (err) {
@@ -203,7 +244,7 @@ document.getElementById("btnFiltrar").addEventListener("click", () => {
 document.getElementById("btnLimpiar").addEventListener("click", () => {
   document.querySelectorAll(".filter-contract, .filter-workmode, .filter-exp").forEach((c) => (c.checked = false));
   document.getElementById("salaryRange").value = 100;
-  document.getElementById("salaryLabel").textContent = "$100k";
+  document.getElementById("salaryLabel").textContent = "US$100,000";
   renderJobs(applyIndexSearchFilters(todosLosJobs));
 });
 
