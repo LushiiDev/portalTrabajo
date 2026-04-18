@@ -24,10 +24,29 @@ function formatDateEs(value) {
   });
 }
 
+function formatSalaryValue(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  return new Intl.NumberFormat("es-SV", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
 function formatSalary(min, max) {
-  const safeMin = Number(min || 0);
-  const safeMax = Number(max || 0);
-  return `${safeMin.toLocaleString("es-ES")} - ${safeMax.toLocaleString("es-ES")} USD`;
+  const safeMin = formatSalaryValue(min);
+  const safeMax = formatSalaryValue(max);
+
+  if (safeMin && safeMax) {
+    return `${safeMin} - ${safeMax}`;
+  }
+
+  return safeMin || safeMax || "A convenir";
 }
 
 function normalizeStatus(rawStatus) {

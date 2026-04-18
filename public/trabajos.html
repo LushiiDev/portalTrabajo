@@ -82,40 +82,60 @@
             <div class="card-body">
               <h6 class="fw-bold mb-3">Filtros</h6>
 
-              <p class="fw-semibold small mb-2">Tipo de trabajo</p>
+              <p class="fw-semibold small mb-2">Tipo de contrato</p>
               <div class="form-check">
-                <input class="form-check-input filter-contract" type="checkbox" value="full-time" id="chkFull" />
-                <label class="form-check-label small" for="chkFull">Full-time</label>
+                <input class="form-check-input filter-contract" type="checkbox" value="Tiempo completo" id="chkFullTime" />
+                <label class="form-check-label small" for="chkFullTime">Tiempo completo</label>
               </div>
               <div class="form-check">
-                <input class="form-check-input filter-contract" type="checkbox" value="part-time" id="chkPart" />
-                <label class="form-check-label small" for="chkPart">Part-time</label>
+                <input class="form-check-input filter-contract" type="checkbox" value="Medio tiempo" id="chkPartTime" />
+                <label class="form-check-label small" for="chkPartTime">Medio tiempo</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input filter-contract" type="checkbox" value="Freelance" id="chkFreelance" />
+                <label class="form-check-label small" for="chkFreelance">Freelance</label>
               </div>
               <div class="form-check mb-3">
-                <input class="form-check-input filter-contract" type="checkbox" value="remote" id="chkRemote" />
-                <label class="form-check-label small" for="chkRemote">Remote</label>
+                <input class="form-check-input filter-contract" type="checkbox" value="Prácticas" id="chkInternship" />
+                <label class="form-check-label small" for="chkInternship">Prácticas</label>
+              </div>
+
+              <hr />
+
+              <p class="fw-semibold small mb-2">Modalidad de trabajo</p>
+              <div class="form-check">
+                <input class="form-check-input filter-workmode" type="checkbox" value="Presencial" id="chkOnsite" />
+                <label class="form-check-label small" for="chkOnsite">Presencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input filter-workmode" type="checkbox" value="Hibrido" id="chkHybrid" />
+                <label class="form-check-label small" for="chkHybrid">Híbrido</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input filter-workmode" type="checkbox" value="Remoto" id="chkRemote" />
+                <label class="form-check-label small" for="chkRemote">Remoto</label>
               </div>
 
               <hr />
 
               <p class="fw-semibold small mb-2">Nivel de experiencia</p>
               <div class="form-check">
-                <input class="form-check-input filter-exp" type="checkbox" value="junior" id="chkJr" />
-                <label class="form-check-label small" for="chkJr">Junior</label>
+                <input class="form-check-input filter-exp" type="checkbox" value="Junior" id="chkJr" />
+                <label class="form-check-label small" for="chkJr">Junior (0-2 años)</label>
               </div>
               <div class="form-check">
-                <input class="form-check-input filter-exp" type="checkbox" value="mid" id="chkMid" />
-                <label class="form-check-label small" for="chkMid">Mid-level</label>
+                <input class="form-check-input filter-exp" type="checkbox" value="Semi-Senior" id="chkMid" />
+                <label class="form-check-label small" for="chkMid">Semi-Senior (2-4 años)</label>
               </div>
               <div class="form-check mb-3">
-                <input class="form-check-input filter-exp" type="checkbox" value="senior" id="chkSr" />
-                <label class="form-check-label small" for="chkSr">Senior</label>
+                <input class="form-check-input filter-exp" type="checkbox" value="Senior" id="chkSr" />
+                <label class="form-check-label small" for="chkSr">Senior (4+ años)</label>
               </div>
 
               <hr />
 
               <p class="fw-semibold small mb-2">
-                Salario máximo: <span id="salaryLabel">$100k</span>
+                Salario máximo: <span id="salaryLabel">US$100,000</span>
               </p>
               <input type="range" class="form-range mb-3" min="0" max="100" value="100" id="salaryRange" />
 

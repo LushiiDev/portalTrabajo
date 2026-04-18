@@ -8,6 +8,32 @@ let todosLosJobs = [];
 let searchQuery = "";
 let searchLocation = "";
 
+function normalizeFilterValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function includesNormalized(source, target) {
+  return normalizeFilterValue(source).includes(normalizeFilterValue(target));
+}
+
+function formatSalaryValue(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  return new Intl.NumberFormat("es-SV", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
 function readSearchParams() {
   const params = new URLSearchParams(window.location.search);
   searchQuery = (params.get("q") || "").trim().toLowerCase();
@@ -72,11 +98,21 @@ async function actualizarNavbarAuth() {
 
 function getBadgeClass(contractType) {
   if (!contractType) return "bg-secondary";
-  const tipo = contractType.toLowerCase();
-  if (tipo.includes("full"))   return "bg-primary";
-  if (tipo.includes("part"))   return "bg-info text-dark";
-  if (tipo.includes("remote")) return "bg-success";
+  const tipo = normalizeFilterValue(contractType);
+  if (tipo.includes("tiempo completo")) return "bg-primary";
+  if (tipo.includes("medio tiempo")) return "bg-info text-dark";
+  if (tipo.includes("freelance")) return "bg-warning text-dark";
+  if (tipo.includes("practicas")) return "bg-success";
   return "bg-secondary";
+}
+
+function filterBySelectedValues(jobValue, selectedValues) {
+  if (!selectedValues.length) {
+    return true;
+  }
+
+  const normalizedJobValue = normalizeFilterValue(jobValue);
+  return selectedValues.some((selectedValue) => normalizedJobValue.includes(normalizeFilterValue(selectedValue)));
 }
 
 function renderJobs(jobs) {
@@ -93,8 +129,8 @@ function renderJobs(jobs) {
   noResult.classList.add("d-none");
 
   jobs.forEach((job) => {
-    const salMin  = job.salary_min ? `$${job.salary_min / 1000}k` : null;
-    const salMax  = job.salary_max ? `$${job.salary_max / 1000}k` : null;
+    const salMin = formatSalaryValue(job.salary_min);
+    const salMax = formatSalaryValue(job.salary_max);
     const salario = salMin && salMax ? `${salMin} - ${salMax}` : salMin || salMax || "A convenir";
     const badge   = getBadgeClass(job.contract_type);
 
@@ -142,28 +178,22 @@ async function cargarJobs() {
 }
 
 document.getElementById("salaryRange").addEventListener("input", function () {
-  document.getElementById("salaryLabel").textContent = `$${this.value}k`;
+  document.getElementById("salaryLabel").textContent = formatSalaryValue(Number(this.value) * 1000) || "A convenir";
 });
 
 document.getElementById("btnFiltrar").addEventListener("click", () => {
   const base = applyIndexSearchFilters(todosLosJobs);
   const contratos = [...document.querySelectorAll(".filter-contract:checked")].map((c) => c.value.toLowerCase());
+  const workModes = [...document.querySelectorAll(".filter-workmode:checked")].map((c) => c.value.toLowerCase());
   const exps      = [...document.querySelectorAll(".filter-exp:checked")].map((c) => c.value.toLowerCase());
   const salMax    = parseInt(document.getElementById("salaryRange").value) * 1000;
 
   let filtrados = base;
 
-  if (contratos.length > 0) {
-    filtrados = filtrados.filter((job) =>
-      job.contract_type && contratos.some((c) => job.contract_type.toLowerCase().includes(c))
-    );
-  }
+  filtrados = filtrados.filter((job) => filterBySelectedValues(job.contract_type, contratos));
+  filtrados = filtrados.filter((job) => filterBySelectedValues(job.work_mode, workModes));
 
-  if (exps.length > 0) {
-    filtrados = filtrados.filter((job) =>
-      job.experience_level && exps.some((e) => job.experience_level.toLowerCase().includes(e))
-    );
-  }
+  filtrados = filtrados.filter((job) => filterBySelectedValues(job.experience_level, exps));
 
   filtrados = filtrados.filter((job) => !job.salary_min || job.salary_min <= salMax);
 
@@ -171,7 +201,7 @@ document.getElementById("btnFiltrar").addEventListener("click", () => {
 });
 
 document.getElementById("btnLimpiar").addEventListener("click", () => {
-  document.querySelectorAll(".filter-contract, .filter-exp").forEach((c) => (c.checked = false));
+  document.querySelectorAll(".filter-contract, .filter-workmode, .filter-exp").forEach((c) => (c.checked = false));
   document.getElementById("salaryRange").value = 100;
   document.getElementById("salaryLabel").textContent = "$100k";
   renderJobs(applyIndexSearchFilters(todosLosJobs));
