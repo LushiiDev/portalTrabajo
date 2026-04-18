@@ -30,13 +30,13 @@ export const postCrearPerfil = async (req, res, next) => {
     const {
       id,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     } = req.body;
 
     const newProfile = await profilesService.createProfile(
       id,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     );
 
     res.status(201).json(newProfile);
@@ -50,12 +50,12 @@ export const putActualizarPerfil = async (req, res, next) => {
     const { id } = req.params;
     const {
       full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     } = req.body;
 
     const updatedProfile = await profilesService.updateProfile(
       id, full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     );
 
     if (!updatedProfile) {
@@ -88,6 +88,18 @@ export const deleteEliminarPerfil = async (req, res, next) => {
     const result = await profilesService.deleteProfile(id);
 
     res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const postSubirAvatar = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { fileName, fileType, fileDataBase64 } = req.body;
+
+    const result = await profilesService.uploadAvatarForProfile(id, fileName, fileType, fileDataBase64);
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }

@@ -24,7 +24,7 @@ export const getProfileById = async (id) => {
 export const createProfile = async (
   id,
   full_name, headline, bio, location,
-  avatar_url, cv_url, role
+  avatar_url, cv_url, role, skills
 ) => {
   const profileId = id || crypto.randomUUID();
 
@@ -33,7 +33,7 @@ export const createProfile = async (
     .insert([{
       id: profileId,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     }])
     .select()
     .single();
@@ -43,7 +43,7 @@ export const createProfile = async (
 
 export const updateProfile = async (
   id, full_name, headline, bio, location,
-  avatar_url, cv_url, role
+  avatar_url, cv_url, role, skills
 ) => {
   const { data: existing, error: findError } = await supabase
     .from('profiles')
@@ -59,7 +59,7 @@ export const updateProfile = async (
     .from('profiles')
     .update({
       full_name, headline, bio, location,
-      avatar_url, cv_url, role
+      avatar_url, cv_url, role, skills
     })
     .eq('id', id)
     .select()
@@ -98,6 +98,27 @@ function ensureValidCvPayload(fileName, fileType, fileDataBase64) {
 
   if (!allowedMimeTypes.includes(fileType)) {
     const error = new Error('Tipo de archivo no permitido');
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+function ensureValidAvatarPayload(fileName, fileType, fileDataBase64) {
+  if (!fileName || !fileType || !fileDataBase64) {
+    const error = new Error('Debes enviar fileName, fileType y fileDataBase64');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  ];
+
+  if (!allowedMimeTypes.includes(fileType)) {
+    const error = new Error('Tipo de imagen no permitido');
     error.statusCode = 400;
     throw error;
   }
@@ -171,6 +192,48 @@ export const uploadCvForProfile = async (profileId, fileName, fileType, fileData
 
   return {
     cvUrl,
+    profile: updatedProfile,
+  };
+};
+
+export const uploadAvatarForProfile = async (profileId, fileName, fileType, fileDataBase64) => {
+  ensureValidAvatarPayload(fileName, fileType, fileDataBase64);
+
+  const bucketName = process.env.AVATAR_BUCKET_NAME || 'avatars';
+  const cleanFileName = sanitizeFileName(fileName);
+  const objectPath = `${profileId}/${Date.now()}-${cleanFileName}`;
+  const fileBuffer = Buffer.from(fileDataBase64, 'base64');
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucketName)
+    .upload(objectPath, fileBuffer, {
+      contentType: fileType,
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(objectPath);
+  const avatarUrl = publicData?.publicUrl || null;
+
+  if (!avatarUrl) {
+    const error = new Error('No se pudo generar URL publica del avatar');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const { data: updatedProfile, error: profileError } = await supabase
+    .from('profiles')
+    .upsert({ id: profileId, avatar_url: avatarUrl }, { onConflict: 'id' })
+    .select('*')
+    .single();
+
+  if (profileError) throw profileError;
+
+  return {
+    avatarUrl,
     profile: updatedProfile,
   };
 };

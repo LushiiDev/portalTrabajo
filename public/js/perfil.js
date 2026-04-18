@@ -11,18 +11,29 @@ let currentUser = null;
 let currentProfile = null;
 let currentCvObjectUrl = null;
 let selectedCvFile = null;
+let selectedAvatarFile = null;
+let selectedAvatarPreviewUrl = null;
+let profileSkills = [];
 
 let alertKeywords = [];
 let alertRows = [];
 let availableJobs = [];
 
 const profileForm = document.getElementById("profileForm");
+const headlineInput = document.getElementById("headline");
 const biografiaInput = document.getElementById("biografia");
 const ubicacionInput = document.getElementById("ubicacion");
 
 const profileNameHeader = document.getElementById("profileNameHeader");
 const profileHeadlineHeader = document.getElementById("profileHeadlineHeader");
 const profileRoleBadge = document.getElementById("profileRoleBadge");
+const chooseAvatarBtn = document.getElementById("chooseAvatarBtn");
+const avatarFileInput = document.getElementById("avatarFileInput");
+const profileAvatarImage = document.getElementById("profileAvatarImage");
+const profileAvatarFallback = document.getElementById("profileAvatarFallback");
+const skillsContainer = document.getElementById("skillsContainer");
+const habilidadesInput = document.getElementById("habilidades");
+const addSkillBtn = document.getElementById("addSkillBtn");
 
 const cvFileInput = document.getElementById("cvFileInput");
 const cvPreviewFrame = document.getElementById("cvPreviewFrame");
@@ -181,6 +192,33 @@ function setupEventListeners() {
 			}
 		});
 	}
+
+	if (chooseAvatarBtn && avatarFileInput) {
+		chooseAvatarBtn.addEventListener("click", function () {
+			avatarFileInput.click();
+		});
+
+		avatarFileInput.addEventListener("change", onAvatarInputChange);
+	}
+
+	if (addSkillBtn) {
+		addSkillBtn.addEventListener("click", onAddSkillClick);
+	}
+
+	if (habilidadesInput) {
+		habilidadesInput.addEventListener("keydown", function (event) {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				onAddSkillClick();
+			}
+		});
+	}
+
+	if (headlineInput && profileHeadlineHeader) {
+		headlineInput.addEventListener("input", function () {
+			profileHeadlineHeader.textContent = headlineInput.value.trim() || "Completa tu perfil profesional";
+		});
+	}
 }
 
 function isMissingColumnError(error) {
@@ -228,6 +266,140 @@ function getMetadataFullName() {
 	return "Usuario";
 }
 
+function getSkillsStorageKey() {
+	if (!currentUser?.id) {
+		return "profileSkills";
+	}
+
+	return "profileSkills:" + currentUser.id;
+}
+
+function parseSkills(rawSkills) {
+	if (Array.isArray(rawSkills)) {
+		return Array.from(new Set(rawSkills.map(function (item) {
+			return String(item || "").trim();
+		}).filter(Boolean)));
+	}
+
+	if (typeof rawSkills === "string") {
+		return Array.from(new Set(rawSkills
+			.split(",")
+			.map(function (item) {
+				return item.trim();
+			})
+			.filter(Boolean)));
+	}
+
+	return [];
+}
+
+function loadSkillsFromLocalStorage() {
+	const storageKey = getSkillsStorageKey();
+	const rawValue = localStorage.getItem(storageKey);
+	if (!rawValue) {
+		return [];
+	}
+
+	try {
+		return parseSkills(JSON.parse(rawValue));
+	} catch (error) {
+		return parseSkills(rawValue);
+	}
+}
+
+function persistSkills() {
+	const storageKey = getSkillsStorageKey();
+	localStorage.setItem(storageKey, JSON.stringify(profileSkills));
+}
+
+function renderProfileAvatar(avatarUrl) {
+	if (!profileAvatarImage || !profileAvatarFallback) {
+		return;
+	}
+
+	if (avatarUrl) {
+		profileAvatarImage.src = avatarUrl;
+		profileAvatarImage.classList.remove("d-none");
+		profileAvatarFallback.classList.add("d-none");
+		return;
+	}
+
+	profileAvatarImage.classList.add("d-none");
+	profileAvatarFallback.classList.remove("d-none");
+}
+
+function renderSkills() {
+	if (!skillsContainer) {
+		return;
+	}
+
+	skillsContainer.innerHTML = "";
+
+	if (!profileSkills.length) {
+		const hint = document.createElement("span");
+		hint.className = "text-muted small";
+		hint.textContent = "Agrega habilidades para destacar tu perfil.";
+		skillsContainer.appendChild(hint);
+		return;
+	}
+
+	profileSkills.forEach(function (skill) {
+		const badge = document.createElement("span");
+		badge.className = "badge text-bg-primary d-inline-flex align-items-center gap-2";
+		badge.innerHTML =
+			'<span>' + skill + '</span><button type="button" class="btn-close btn-close-white" aria-label="Eliminar habilidad"></button>';
+
+		badge.querySelector("button").addEventListener("click", function () {
+			profileSkills = profileSkills.filter(function (item) {
+				return item !== skill;
+			});
+			persistSkills();
+			renderSkills();
+		});
+
+		skillsContainer.appendChild(badge);
+	});
+}
+
+function onAddSkillClick() {
+	const rawSkill = habilidadesInput?.value || "";
+	const normalizedSkill = rawSkill.trim();
+	if (!normalizedSkill) {
+		return;
+	}
+
+	const exists = profileSkills.some(function (item) {
+		return item.toLowerCase() === normalizedSkill.toLowerCase();
+	});
+
+	if (exists) {
+		habilidadesInput.value = "";
+		return;
+	}
+
+	profileSkills.push(normalizedSkill);
+	persistSkills();
+	renderSkills();
+	habilidadesInput.value = "";
+}
+
+function onAvatarInputChange(event) {
+	const file = event.target.files?.[0];
+	if (!file) {
+		return;
+	}
+
+	if (!file.type.startsWith("image/")) {
+		alert("Selecciona una imagen valida.");
+		avatarFileInput.value = "";
+		return;
+	}
+
+	selectedAvatarFile = file;
+	selectedAvatarPreviewUrl = URL.createObjectURL(file);
+	renderProfileAvatar(selectedAvatarPreviewUrl);
+}
+
 async function loadProfile() {
 	try {
 		currentProfile = await apiFetchJson("/api/profiles/" + currentUser.id);
@@ -242,6 +414,7 @@ function applyProfileToUI(profile) {
 	const fullName = profile?.full_name || getMetadataFullName();
 	const headline = profile?.headline || "Completa tu perfil profesional";
 	const role = profile?.role || "Candidato";
+	const profileAvatar = selectedAvatarPreviewUrl || profile?.avatar_url || "";
 
 	if (profileNameHeader) {
 		profileNameHeader.textContent = fullName;
@@ -254,6 +427,21 @@ function applyProfileToUI(profile) {
 	if (profileRoleBadge) {
 		profileRoleBadge.textContent = role;
 	}
+
+	if (headlineInput) {
+		headlineInput.value = profile?.headline || "";
+	}
+
+	renderProfileAvatar(profileAvatar);
+
+	const incomingSkills = parseSkills(profile?.skills);
+	if (incomingSkills.length) {
+		profileSkills = incomingSkills;
+		persistSkills();
+	} else {
+		profileSkills = loadSkillsFromLocalStorage();
+	}
+	renderSkills();
 
 	if (biografiaInput) {
 		biografiaInput.value = profile?.bio || "";
@@ -283,13 +471,29 @@ async function onProfileSubmit(event) {
 	event.preventDefault();
 
 	try {
+		let avatarUrl = currentProfile?.avatar_url || null;
+		if (selectedAvatarFile) {
+			const uploadedAvatarUrl = await uploadAvatarToStorage(selectedAvatarFile);
+			if (!uploadedAvatarUrl) {
+				throw new Error("No se obtuvo URL publica para el avatar");
+			}
+
+			avatarUrl = uploadedAvatarUrl;
+			selectedAvatarFile = null;
+			selectedAvatarPreviewUrl = uploadedAvatarUrl;
+			if (avatarFileInput) {
+				avatarFileInput.value = "";
+			}
+		}
+
 		const updates = {
 			id: currentUser.id,
 			full_name: currentProfile?.full_name || getMetadataFullName(),
-			headline: currentProfile?.headline || profileHeadlineHeader?.textContent || "",
+			headline: headlineInput?.value?.trim() || "",
 			bio: biografiaInput?.value?.trim() || "",
 			location: ubicacionInput?.value || null,
-			avatar_url: currentProfile?.avatar_url || null,
+			avatar_url: avatarUrl,
+			skills: profileSkills,
 			cv_url: currentProfile?.cv_url || null,
 			role: currentProfile?.role || "Candidato",
 		};
@@ -306,6 +510,15 @@ async function onProfileSubmit(event) {
 			});
 		}
 
+		if (!currentProfile?.skills) {
+			currentProfile = {
+				...(currentProfile || {}),
+				skills: profileSkills,
+			};
+		}
+
+		persistSkills();
+		selectedAvatarPreviewUrl = currentProfile?.avatar_url || selectedAvatarPreviewUrl;
 		applyProfileToUI(currentProfile);
 		alert("Perfil guardado correctamente.");
 	} catch (error) {
@@ -550,6 +763,30 @@ async function uploadCvToStorage(file) {
 
 	currentProfile = response?.profile || currentProfile;
 	return response?.cvUrl || null;
+}
+
+async function uploadAvatarToStorage(file) {
+	const fileAsBase64 = await new Promise(function (resolve, reject) {
+		const reader = new FileReader();
+		reader.onload = function () {
+			const dataUrl = String(reader.result || "");
+			resolve(dataUrl.split(",")[1] || "");
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(file);
+	});
+
+	const response = await apiFetchJson("/api/profiles/" + currentUser.id + "/avatar-upload", {
+		method: "POST",
+		body: JSON.stringify({
+			fileName: sanitizeFileName(file.name),
+			fileType: file.type,
+			fileDataBase64: fileAsBase64,
+		}),
+	});
+
+	currentProfile = response?.profile || currentProfile;
+	return response?.avatarUrl || null;
 }
 
 async function onUploadCvClick() {

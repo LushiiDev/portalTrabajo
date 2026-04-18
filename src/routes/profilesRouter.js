@@ -12,6 +12,8 @@ router.post('/', profilesController.postCrearPerfil);
 
 router.post('/:id/cv-upload', profilesController.postSubirCv);
 
+router.post('/:id/avatar-upload', profilesController.postSubirAvatar);
+
 router.put('/:id', profilesController.putActualizarPerfil);
 
 router.delete('/:id', profilesController.deleteEliminarPerfil);

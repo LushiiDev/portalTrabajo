@@ -94,22 +94,37 @@
           >
             <div class="d-flex align-items-center gap-3 gap-md-4">
               <div
+                id="profileAvatarWrapper"
                 class="rounded-circle bg-body-tertiary d-inline-flex align-items-center justify-content-center"
                 style="width: 86px; height: 86px"
               >
-                <i class="bi bi-person fs-1 text-secondary"></i>
+                <img
+                  id="profileAvatarImage"
+                  src=""
+                  alt="Foto de perfil"
+                  class="w-100 h-100 rounded-circle object-fit-cover d-none"
+                />
+                <i id="profileAvatarFallback" class="bi bi-person fs-1 text-secondary"></i>
               </div>
 
               <div>
                 <h1 id="profileNameHeader" class="h2 mb-1 fw-semibold">Juan Perez</h1>
                 <p id="profileHeadlineHeader" class="mb-2 text-secondary">Frontend Developer | React Specialist</p>
                 <span id="profileRoleBadge" class="badge rounded-pill text-bg-secondary">Candidato</span>
+                <div class="mt-2">
+                  <input
+                    id="avatarFileInput"
+                    type="file"
+                    class="d-none"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                  <button id="chooseAvatarBtn" type="button" class="btn btn-sm btn-outline-secondary">
+                    Cambiar foto
+                  </button>
+                </div>
               </div>
             </div>
 
-            <button type="button" class="btn btn-outline-primary px-3 align-self-start align-self-md-center">
-              Editar perfil
-            </button>
           </div>
         </div>
       </section>
@@ -185,6 +200,16 @@
             >
               <form id="profileForm">
                 <div class="mb-3">
+                  <label for="headline" class="form-label fw-semibold">Headline profesional</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="headline"
+                    placeholder="Ej: Desarrollador Frontend | React"
+                  />
+                </div>
+
+                <div class="mb-3">
                   <label for="biografia" class="form-label fw-semibold">Biografia</label>
                   <textarea
                     class="form-control"
@@ -196,28 +221,36 @@
 
                 <div class="mb-3">
                   <label class="form-label fw-semibold d-block">Habilidades</label>
-                  <div class="d-flex flex-wrap gap-1 mb-2">
-                    <span class="badge text-bg-primary">React</span>
-                    <span class="badge text-bg-primary">TypeScript</span>
-                    <span class="badge text-bg-primary">JavaScript</span>
-                    <span class="badge text-bg-primary">CSS</span>
-                    <span class="badge text-bg-primary">HTML</span>
+                  <div id="skillsContainer" class="d-flex flex-wrap gap-1 mb-2"></div>
+                  <div class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="habilidades"
+                      placeholder="Anadir nueva habilidad..."
+                    />
+                    <button id="addSkillBtn" class="btn btn-outline-primary" type="button">Agregar</button>
                   </div>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="habilidades"
-                    placeholder="Anadir nueva habilidad..."
-                  />
                 </div>
 
                 <div class="mb-4">
                   <label for="ubicacion" class="form-label fw-semibold">Ubicacion</label>
                   <select class="form-select" id="ubicacion">
-                    <option selected>Selecciona tu ubicacion</option>
-                    <option value="1">Ahuachapan</option>
-                    <option value="2">Santa Ana</option>
-                    <option value="3">Metapan</option>
+                    <option value="" selected>Selecciona tu ubicacion</option>
+                    <option value="Ahuachapan">Ahuachapan</option>
+                    <option value="Santa Ana">Santa Ana</option>
+                    <option value="Sonsonate">Sonsonate</option>
+                    <option value="Chalatenango">Chalatenango</option>
+                    <option value="La Libertad">La Libertad</option>
+                    <option value="San Salvador">San Salvador</option>
+                    <option value="Cuscatlan">Cuscatlan</option>
+                    <option value="La Paz">La Paz</option>
+                    <option value="Cabanas">Cabanas</option>
+                    <option value="San Vicente">San Vicente</option>
+                    <option value="Usulutan">Usulutan</option>
+                    <option value="San Miguel">San Miguel</option>
+                    <option value="Morazan">Morazan</option>
+                    <option value="La Union">La Union</option>
                   </select>
                 </div>
 
