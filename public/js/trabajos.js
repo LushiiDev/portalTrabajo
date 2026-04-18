@@ -9,6 +9,17 @@ let searchQuery = "";
 let searchLocation = "";
 let companiesById = new Map();
 
+function normalizeJobStatus(status) {
+  const normalized = normalizeFilterValue(status);
+  if (normalized === "active") return "activa";
+  if (normalized === "activo") return "activa";
+  return normalized;
+}
+
+function isActiveJob(job) {
+  return normalizeJobStatus(job?.status) === "activa";
+}
+
 function normalizeFilterValue(value) {
   return String(value || "")
     .trim()
@@ -215,7 +226,8 @@ async function cargarJobs() {
     const companies = companiesRes.ok ? await companiesRes.json() : [];
     companiesById = new Map((companies || []).map((company) => [company.id, company]));
 
-    todosLosJobs = await jobsRes.json();
+    const allJobs = await jobsRes.json();
+    todosLosJobs = (allJobs || []).filter((job) => isActiveJob(job));
     const jobsFiltradosIniciales = applyIndexSearchFilters(todosLosJobs);
     renderJobs(jobsFiltradosIniciales);
   } catch (err) {
