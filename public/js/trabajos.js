@@ -96,9 +96,14 @@ async function actualizarNavbarAuth() {
 
   const meta = session.user?.user_metadata || {};
   const tipoCuenta = meta.tipo_cuenta || "usuario";
+  const userLabel =
+    meta.nombre_empresa ||
+    meta.nombre ||
+    session.user?.email ||
+    "Usuario";
 
   if (userEmailLabel) {
-    userEmailLabel.textContent = session.user?.email || "Usuario";
+    userEmailLabel.textContent = userLabel;
   }
 
   const profileIcon = userMenu.querySelector(".dropdown-menu .bi-person");

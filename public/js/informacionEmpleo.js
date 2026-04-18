@@ -278,10 +278,17 @@ async function actualizarNavbarAuth() {
     authActions.classList.remove("d-none");
     userMenu.classList.add("d-none");
   } else {
-    const tipoCuenta = session.user?.user_metadata?.tipo_cuenta || "usuario";
+    const metadata = session.user?.user_metadata || {};
+    const tipoCuenta = metadata.tipo_cuenta || "usuario";
+    const userLabel =
+      metadata.nombre_empresa ||
+      metadata.nombre ||
+      session.user?.email ||
+      "Usuario";
+
     authActions.classList.add("d-none");
     userMenu.classList.remove("d-none");
-    if (userEmailLabel) userEmailLabel.textContent = session.user?.email || "Usuario";
+    if (userEmailLabel) userEmailLabel.textContent = userLabel;
     if (profileLink) {
       profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
     }
