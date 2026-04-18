@@ -47,6 +47,8 @@ const applicationCountBadge = document.getElementById("applicationCountBadge");
 
 const keywordInput = document.getElementById("keywordInput");
 const addKeywordBtn = document.getElementById("addKeywordBtn");
+const notifyWebCheck = document.getElementById("notifyWebCheck");
+const notifyEmailCheck = document.getElementById("notifyEmailCheck");
 const keywordsContainer = document.getElementById("keywordsContainer");
 const jobsAlertsList = document.getElementById("jobsAlertsList");
 const alertsEmptyState = document.getElementById("alertsEmptyState");
@@ -936,6 +938,18 @@ async function loadAlertsAndJobs() {
 		});
 		availableJobs = jobsResponse || [];
 
+		if (notifyEmailCheck) {
+			notifyEmailCheck.checked = alertRows.some(function (row) {
+				return Boolean(row.notify_email);
+			});
+		}
+
+		if (notifyWebCheck) {
+			notifyWebCheck.checked = !alertRows.length || alertRows.some(function (row) {
+				return row.notify_web !== false;
+			});
+		}
+
 		alertKeywords = Array.from(
 			new Set(
 				alertRows
@@ -959,6 +973,13 @@ async function onAddKeywordClick() {
 		return;
 	}
 
+	const notifyWeb = notifyWebCheck ? notifyWebCheck.checked : true;
+	const notifyEmail = notifyEmailCheck ? notifyEmailCheck.checked : false;
+	if (!notifyWeb && !notifyEmail) {
+		alert("Selecciona al menos un canal de notificacion (app o correo).");
+		return;
+	}
+
 	if (alertKeywords.includes(keyword)) {
 		keywordInput.value = "";
 		return;
@@ -971,8 +992,10 @@ async function onAddKeywordClick() {
 
 	const payload = {
 		keyword,
-		location: ubicacionInput?.value || null,
+		location: null,
 		user_id: currentUser.id,
+		notify_web: notifyWeb,
+		notify_email: notifyEmail,
 	};
 
 	try {

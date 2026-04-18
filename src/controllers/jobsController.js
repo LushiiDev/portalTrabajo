@@ -1,4 +1,5 @@
 import * as jobsService from "../services/jobsService.js";
+import { notifyUsersForNewJob } from "../services/jobAlertsService.js";
 
 export const getObtenerTodosLosTrabajos = async (req, res, next) => {
   try {
@@ -44,6 +45,17 @@ export const postPublicarTrabajo = async (req, res, next) => {
       workMode,
       experienceLevel,
     );
+
+    void notifyUsersForNewJob(newJob)
+      .then((summary) => {
+        console.log(
+          `Alertas vacante ${newJob.id}: total_email_alerts=${summary?.totalEmailAlerts || 0}, matched=${summary?.matchedAlerts || 0}, recipients=${summary?.recipients || 0}, emails_sent=${summary?.emailsSent || 0}`,
+        );
+      })
+      .catch((emailError) => {
+        console.error("No se pudieron procesar alertas por correo:", emailError.message || emailError);
+      });
+
     res.json(newJob);
   } catch (err) {
     return next(err);
