@@ -10,6 +10,9 @@ import companiesRouter from './routes/companiesRouter.js';
 import profilesRouter from './routes/profilesRouter.js';
 import alertsRouter from './routes/alertsRouter.js';
 import reviewsRouter from './routes/reviewsRouter.js';
+import adminUsersRouter from "./routes/adminUsersRouter.js";
+import adminJobsRouter from "./routes/adminJobsRouter.js";
+import adminModerationRouter from "./routes/adminModerationRouter.js";
 
 import dotenv from 'dotenv'
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -39,6 +42,11 @@ app.use('/forum_threads', forumThreadsRouter);
 app.use('/applications', applicationsRouter);
 app.use('/alerts', alertsRouter);
 app.use('/reviews', reviewsRouter);
+
+// Admin API (protected via requireAdmin middleware)
+app.use("/api/admin/users", adminUsersRouter);
+app.use("/api/admin/jobs", adminJobsRouter);
+app.use("/api/admin/moderation", adminModerationRouter);
 
 app.use(errorHandler);
 

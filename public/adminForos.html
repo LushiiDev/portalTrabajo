@@ -18,18 +18,30 @@
     <div class="d-flex admin-shell">
       <aside class="admin-sidebar p-3">
         <div class="d-flex align-items-center gap-2 mb-4 px-2">
-          <i class="bi bi-shield-check" style="font-size: 20px; color: #d35400"></i>
+          <i
+            class="bi bi-shield-check"
+            style="font-size: 20px; color: #d35400"
+          ></i>
           <div class="admin-brand" style="font-size: 22px">Panel Admin</div>
         </div>
 
         <nav class="admin-nav d-flex flex-column gap-2">
-          <a class="text-decoration-none d-flex align-items-center gap-2" href="./adminUsuarios.html">
+          <a
+            class="text-decoration-none d-flex align-items-center gap-2"
+            href="./adminUsuarios.html"
+          >
             <i class="bi bi-people"></i> Gestión de Usuarios
           </a>
-          <a class="text-decoration-none d-flex align-items-center gap-2" href="./adminOfertas.html">
+          <a
+            class="text-decoration-none d-flex align-items-center gap-2"
+            href="./adminOfertas.html"
+          >
             <i class="bi bi-briefcase"></i> Gestión de Ofertas
           </a>
-          <a class="text-decoration-none d-flex align-items-center gap-2" href="./adminForos.html">
+          <a
+            class="text-decoration-none d-flex align-items-center gap-2"
+            href="./adminForos.html"
+          >
             <i class="bi bi-exclamation-triangle"></i> Moderación de Foros
           </a>
         </nav>
@@ -38,10 +50,16 @@
       <main class="admin-main flex-grow-1">
         <div id="adminBanner" class="admin-banner mb-3 d-none"></div>
 
-        <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-3">
+        <div
+          class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-3"
+        >
           <div>
-            <h1 class="fw-black mb-1" style="font-weight: 900">Moderación de Foros y Valoraciones</h1>
-            <div class="admin-subtitle">Gestiona contenido marcado / pendiente de revisión</div>
+            <h1 class="fw-black mb-1" style="font-weight: 900">
+              Moderación de Foros y Valoraciones
+            </h1>
+            <div class="admin-subtitle">
+              Gestiona contenido marcado / pendiente de revisión
+            </div>
           </div>
         </div>
 
@@ -75,17 +93,35 @@
         <div class="admin-card p-3">
           <ul class="nav nav-tabs" id="moderationTabs" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#pane-all" type="button">
+              <button
+                class="nav-link active"
+                id="tab-all"
+                data-bs-toggle="tab"
+                data-bs-target="#pane-all"
+                type="button"
+              >
                 Todos
               </button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="tab-threads" data-bs-toggle="tab" data-bs-target="#pane-threads" type="button">
+              <button
+                class="nav-link"
+                id="tab-threads"
+                data-bs-toggle="tab"
+                data-bs-target="#pane-threads"
+                type="button"
+              >
                 Foros
               </button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="tab-reviews" data-bs-toggle="tab" data-bs-target="#pane-reviews" type="button">
+              <button
+                class="nav-link"
+                id="tab-reviews"
+                data-bs-toggle="tab"
+                data-bs-target="#pane-reviews"
+                type="button"
+              >
                 Valoraciones
               </button>
             </li>
@@ -106,7 +142,9 @@
                     </tr>
                   </thead>
                   <tbody id="allTbody">
-                    <tr><td colspan="6" class="text-muted">Cargando...</td></tr>
+                    <tr>
+                      <td colspan="6" class="text-muted">Cargando...</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -126,7 +164,9 @@
                     </tr>
                   </thead>
                   <tbody id="threadsTbody">
-                    <tr><td colspan="6" class="text-muted">Cargando...</td></tr>
+                    <tr>
+                      <td colspan="6" class="text-muted">Cargando...</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -146,7 +186,9 @@
                     </tr>
                   </thead>
                   <tbody id="reviewsTbody">
-                    <tr><td colspan="6" class="text-muted">Cargando...</td></tr>
+                    <tr>
+                      <td colspan="6" class="text-muted">Cargando...</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -154,9 +196,11 @@
           </div>
 
           <div class="text-muted mt-2" style="font-size: 12px">
-            Nota: el diseño original habla de “reportes”. En este proyecto no existe una tabla <code>reports</code>.
-            Este panel usa <code>forum_threads</code> y <code>reviews</code> como “pendientes” según su columna
-            <code>status</code>. Si quieres reportes reales, hay que crear la tabla + endpoints/RLS.
+            Nota: el diseño original habla de “reportes”. En este proyecto no
+            existe una tabla <code>reports</code>. Este panel usa
+            <code>forum_threads</code> y <code>reviews</code> como “pendientes”
+            según su columna <code>status</code>. Si quieres reportes reales,
+            hay que crear la tabla + endpoints/RLS.
           </div>
         </div>
       </main>
@@ -168,7 +212,11 @@
         <div class="modal-content" style="border-radius: 18px">
           <div class="modal-header">
             <h5 class="modal-title" id="jsonModalTitle">Detalle</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
           <div class="modal-body">
             <pre
@@ -183,10 +231,18 @@
 
     <!-- Toast -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div id="adminToast" class="toast align-items-center text-bg-info border-0" role="alert">
+      <div
+        id="adminToast"
+        class="toast align-items-center text-bg-info border-0"
+        role="alert"
+      >
         <div class="d-flex">
           <div id="adminToastBody" class="toast-body"></div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+          ></button>
         </div>
       </div>
     </div>
@@ -196,4 +252,3 @@
     <script type="module" src="./js/adminForos.js"></script>
   </body>
 </html>
-
