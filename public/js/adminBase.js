@@ -47,7 +47,7 @@ export async function apiFetch(path, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(resolveApiUrl(path), {
     ...options,
     headers,
   });
@@ -63,13 +63,47 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    const message =
+    let message =
       (data && typeof data === "object" && (data.message || data.error)) ||
       response.statusText ||
       "Error en la API";
+
+    // Helpful hint when admin pages are opened from a different port (e.g. Live Server).
+    if (
+      response.status === 404 &&
+      typeof path === "string" &&
+      path.startsWith("/api/") &&
+      isLocalhost() &&
+      window.location.port &&
+      window.location.port !== "3000"
+    ) {
+      message += " (parece que abriste el frontend en otro puerto; usa http://localhost:3000 o configura API_BASE_URL)";
+    }
+
+    message = `${response.status}: ${message}`;
     throw new Error(message);
   }
   return data;
+}
+
+function isLocalhost() {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function resolveApiUrl(path) {
+  if (typeof path !== "string") return path;
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const override = window.localStorage?.getItem("API_BASE_URL") || "";
+  if (override) return new URL(path, override).toString();
+
+  // If frontend is served from another localhost port (e.g. 5500), call backend on 3000.
+  if (isLocalhost() && window.location.port && window.location.port !== "3000") {
+    return new URL(path, "http://localhost:3000").toString();
+  }
+
+  return path;
 }
 
 export function setActiveSidebar(hrefSuffix) {
@@ -81,6 +115,8 @@ export function setActiveSidebar(hrefSuffix) {
 }
 
 export function ensureAdminBanner(session) {
+  renderSessionInfo(session);
+
   const banner = document.getElementById("adminBanner");
   if (!banner) return;
 
@@ -98,6 +134,26 @@ export function ensureAdminBanner(session) {
   banner.classList.remove("d-none");
   banner.textContent =
     "Aviso: este usuario no tiene rol admin en Supabase. Las acciones de admin pueden fallar si no tiene permisos.";
+}
+
+function renderSessionInfo(session) {
+  const info = document.getElementById("adminSessionInfo");
+  if (!info) return;
+
+  const user = session?.user || {};
+  const userMeta = user.user_metadata || {};
+  const appMeta = user.app_metadata || {};
+  const role =
+    userMeta.role ||
+    userMeta.tipo_cuenta ||
+    appMeta.role ||
+    appMeta.tipo_cuenta ||
+    (userMeta.is_admin ? "admin" : "");
+
+  const who = user.email || user.id || "usuario sin identificar";
+  info.textContent = role
+    ? `Sesión activa: ${who} | Rol: ${role}`
+    : `Sesión activa: ${who}`;
 }
 
 export function showToast(message, type = "info") {

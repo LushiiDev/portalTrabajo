@@ -57,19 +57,24 @@ function prettyStatus(status) {
 }
 
 async function loadUsers() {
-  const result = await apiFetch("/api/admin/users");
-  const users = result?.users || [];
-  allUsers = users.map((u) => ({
-    id: u.id,
-    table: u.table,
-    raw: u.raw,
-    nombre: u.name,
-    email: u.email || "-",
-    rol: u.role,
-    estado: u.status,
-    registro: u.created_at,
-    ultimo: u.last_sign_in_at,
-  }));
+  try {
+    const result = await apiFetch("/api/admin/users");
+    const users = result?.users || [];
+    allUsers = users.map((u) => ({
+      id: u.id,
+      table: u.table,
+      raw: u.raw,
+      nombre: u.name,
+      email: u.email || "-",
+      rol: u.role,
+      estado: u.status,
+      registro: u.created_at,
+      ultimo: u.last_sign_in_at,
+    }));
+  } catch (e) {
+    showToast("No se pudieron cargar usuarios: " + e.message, "danger");
+    allUsers = [];
+  }
 }
 
 function computeStats(users) {
