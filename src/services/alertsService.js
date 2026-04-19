@@ -8,11 +8,19 @@ export const getAllAlerts = async () => {
   return data;
 };
 
-export const postPublicAlert = async (userId, keyword, location) => {
+export const postPublicAlert = async (
+  userId,
+  keyword,
+  location,
+  notifyWeb = true,
+  notifyEmail = false,
+) => {
   const payload = {
     user_id: userId,
     keyword,
     location,
+    notify_web: Boolean(notifyWeb),
+    notify_email: Boolean(notifyEmail),
   };
 
   const { data, error } = await supabase

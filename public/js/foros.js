@@ -1,5 +1,25 @@
 let consejos = [];
 let foros = [];
+let replies = [];
+let perfilesById = new Map();
+
+function getProfileName(userId) {
+  if (!userId) return "";
+  const profile = perfilesById.get(userId);
+  return (profile?.full_name || "").trim();
+}
+
+async function loadProfiles() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profiles`);
+    if (!response.ok) throw new Error("No fue posible cargar perfiles");
+    const profiles = await response.json();
+    perfilesById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+  } catch (error) {
+    console.error("Error cargando perfiles:", error.message);
+    perfilesById = new Map();
+  }
+}
 
 function formatDate(value) {
   if (!value) return "";
@@ -18,14 +38,17 @@ function shortText(text, limit = 110) {
 }
 
 async function loadConsejos() {
-  const { data, error } = await supabaseClient.from("tips").select("*");
   const container = document.getElementById("consejos-list");
-  if (error) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tips`);
+    if (!response.ok) throw new Error("No fue posible cargar los consejos");
+    consejos = await response.json();
+  } catch (error) {
     console.error("Error cargando consejos:", error.message);
     container.innerHTML = "<p class='text-danger'>No fue posible cargar los consejos.</p>";
     return;
   }
-  consejos = data || [];
+
   container.innerHTML = consejos.length
     ? consejos
         .map((tip) => {
@@ -48,27 +71,48 @@ async function loadConsejos() {
 }
 
 async function loadForos() {
-  const { data, error } = await supabaseClient.from("forum_threads").select("*");
   const container = document.getElementById("foros-list");
-  if (error) {
+
+  try {
+    const [threadsResponse, repliesResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/forum_threads`),
+      fetch(`${API_BASE_URL}/forum_replies`),
+    ]);
+
+    if (!threadsResponse.ok || !repliesResponse.ok) {
+      throw new Error("No fue posible cargar los temas del foro");
+    }
+
+    foros = (await threadsResponse.json()) || [];
+    replies = (await repliesResponse.json()) || [];
+  } catch (error) {
     console.error("Error cargando foros:", error.message);
     container.innerHTML = "<p class='text-danger'>No fue posible cargar los temas del foro.</p>";
     return;
   }
-  foros = data || [];
+
+  const repliesByThread = replies.reduce((acc, reply) => {
+    const threadId = reply.thread_id;
+    if (!threadId) return acc;
+    acc[threadId] = (acc[threadId] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sortedThreads = [...foros].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
   container.innerHTML = foros.length
-    ? foros
+    ? sortedThreads
         .map((thread) => {
-          const author = thread.author || thread.created_by || "Usuario";
+          const author = getProfileName(thread.user_id) || "Usuario";
           const date = formatDate(thread.created_at || thread.date);
-          const replies = thread.reply_count || thread.replies || 0;
+          const repliesCount = repliesByThread[thread.id] || 0;
           return `
             <div class="forum-card">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <div class="fw-semibold" style="font-size:14px">${thread.title || "Tema sin título"}</div>
                   <div class="text-muted" style="font-size:12px">Por ${author}</div>
-                  <div class="text-muted" style="font-size:12px">💬 ${replies} respuestas &nbsp; ${date}</div>
+                  <div class="text-muted" style="font-size:12px">💬 ${repliesCount} respuestas &nbsp; ${date}</div>
                 </div>
                 <button class="btn-ver" onclick="openDetallePage('thread', '${thread.id}')">Ver hilo</button>
               </div>
@@ -106,11 +150,20 @@ async function createThread(title, content, category) {
     status: "open",
     user_id: userId,
   };
-  const { data, error } = await supabaseClient.from("forum_threads").insert([payload]).select().single();
-  if (error) {
-    throw error;
+
+  const response = await fetch(`${API_BASE_URL}/forum_threads`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo crear el tema del foro");
   }
-  return data;
+
+  return await response.json();
 }
 
 async function createTip(title, description, category) {
@@ -119,11 +172,20 @@ async function createTip(title, description, category) {
     description,
     category,
   };
-  const { data, error } = await supabaseClient.from("tips").insert([payload]).select().single();
-  if (error) {
-    throw error;
+
+  const response = await fetch(`${API_BASE_URL}/tips`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo crear el consejo");
   }
-  return data;
+
+  return await response.json();
 }
 
 async function handleNewTopicSubmit(event) {
@@ -168,8 +230,11 @@ function showMain() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  loadConsejos();
-  loadForos();
+  (async () => {
+    await loadProfiles();
+    await loadConsejos();
+    await loadForos();
+  })();
   const newTopicButton = document.getElementById("btnNuevoTema");
   if (newTopicButton) {
     newTopicButton.addEventListener("click", () => {

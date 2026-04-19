@@ -11,9 +11,27 @@ export const getObtenerTodasLasAplicaciones = async (req, res, next) => {
 
 export const postPublicarAplicacion = async (req, res, next) => {
   try {
-    const { cv_url, status } = req.body;
+    const {
+      job_post_id,
+      candidate_id,
+      cv_url,
+      status,
+      job_id,
+      user_id,
+    } = req.body;
+
+    const normalizedJobPostId = job_post_id || job_id;
+    const normalizedCandidateId = candidate_id || user_id;
+
+    if (!normalizedJobPostId || !normalizedCandidateId) {
+      return res.status(400).json({
+        message: "job_post_id y candidate_id son requeridos.",
+      });
+    }
 
     const newApplication = await applicationsService.postPublicApplication(
+      normalizedJobPostId,
+      normalizedCandidateId,
       cv_url,
       status,
     );

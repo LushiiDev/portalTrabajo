@@ -8,10 +8,17 @@ export const getAllApplications = async () => {
   return data;
 };
 
-export const postPublicApplication = async (cv_url, status) => {
+export const postPublicApplication = async (
+  jobPostId,
+  candidateId,
+  cv_url,
+  status,
+) => {
   const payload = {
+    job_post_id: jobPostId,
+    candidate_id: candidateId,
     cv_url,
-    status: "pendiente",
+    status: status || "pendiente",
   };
 
   const { data, error } = await supabase
