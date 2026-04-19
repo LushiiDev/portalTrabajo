@@ -59,6 +59,37 @@ async function crearPerfilUsuario(userId, nombre, apellido) {
   }
 }
 
+async function getProfileStatus(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("No se pudo consultar status del perfil:", error.message);
+      return null;
+    }
+    return String(data?.status || "activo").toLowerCase();
+  } catch (err) {
+    console.warn("Error consultando status del perfil:", err);
+    return null;
+  }
+}
+
+async function blockIfSuspended(user) {
+  const status = await getProfileStatus(user?.id);
+  if (status === "suspendido") {
+    await supabaseClient.auth.signOut();
+    alert("Tu cuenta está suspendida. Contacta al administrador.");
+    window.location.href = "./registroUsuario.html";
+    return true;
+  }
+  return false;
+}
+
 async function actualizarNavbarAuth() {
   const authActions = document.getElementById("authActions");
   const userMenu = document.getElementById("userMenu");
@@ -75,6 +106,8 @@ async function actualizarNavbarAuth() {
     userMenu.classList.add("d-none");
     return;
   }
+
+  if (await blockIfSuspended(session.user)) return;
 
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
@@ -190,6 +223,8 @@ function initAuthPage() {
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) { alert("Error al iniciar sesión: " + error.message); return; }
+
+      if (await blockIfSuspended(data?.user)) return;
 
       const tipoCuenta = data?.user?.user_metadata?.tipo_cuenta || "usuario";
 

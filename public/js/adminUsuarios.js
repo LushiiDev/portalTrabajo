@@ -132,12 +132,16 @@ function render(users) {
     .map((u) => {
       const role = prettyRole(u.rol);
       const roleCls =
-        normalizeRole(u.rol) === "candidato" ? "badge-role gray" : "badge-role";
+        normalizeRole(u.rol) === "candidato"
+          ? "text-bg-secondary"
+          : normalizeRole(u.rol) === "admin"
+            ? "text-bg-danger"
+            : "text-bg-primary";
       const status = prettyStatus(u.estado);
       const statusCls =
         normalizeStatus(u.estado) === "suspendido"
-          ? "badge-status red"
-          : "badge-status";
+          ? "text-bg-warning"
+          : "text-bg-success";
       const reg = formatDate(u.registro);
       const last = u.ultimo ? formatDate(u.ultimo) : "-";
 
@@ -148,24 +152,26 @@ function render(users) {
           ? "bi-unlock"
           : "bi-slash-circle";
       const toggleBtnCls =
-        normalizeStatus(u.estado) === "suspendido" ? "btn-ok" : "btn-warn";
+        normalizeStatus(u.estado) === "suspendido"
+          ? "btn-success"
+          : "btn-warning";
 
       return `
         <tr>
           <td class="fw-semibold">${escapeHtml(u.nombre)}</td>
           <td class="text-muted">${escapeHtml(u.email || "-")}</td>
-          <td><span class="badge-soft ${roleCls}">${escapeHtml(role)}</span></td>
-          <td><span class="badge-soft ${statusCls}">${escapeHtml(status)}</span></td>
+          <td><span class="badge rounded-pill ${roleCls}">${escapeHtml(role)}</span></td>
+          <td><span class="badge rounded-pill ${statusCls}">${escapeHtml(status)}</span></td>
           <td class="text-muted">${escapeHtml(reg)}</td>
           <td class="text-muted">${escapeHtml(last)}</td>
           <td class="text-end">
-            <button class="btn-action btn-view me-1" data-action="view" data-id="${u.id}" title="Ver">
+            <button class="btn btn-sm btn-outline-primary me-1" data-action="view" data-id="${u.id}" title="Ver">
               <i class="bi bi-eye"></i>
             </button>
-            <button class="btn-action ${toggleBtnCls} me-1" data-action="toggle" data-id="${u.id}" title="${toggleLabel}">
+            <button class="btn btn-sm ${toggleBtnCls} me-1" data-action="toggle" data-id="${u.id}" title="${toggleLabel}">
               <i class="bi ${toggleIcon}"></i>
             </button>
-            <button class="btn-action btn-danger" data-action="delete" data-id="${u.id}" title="Eliminar">
+            <button class="btn btn-sm btn-danger" data-action="delete" data-id="${u.id}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -204,8 +210,7 @@ async function toggleUserStatus(user) {
     user.estado = updated.status || updated.estado || next;
   } catch (e) {
     showToast(
-      `No se pudo actualizar el estado en ${user.table}. ` +
-        `Asegúrate de que exista columna 'status' y permisos/RLS. Detalle: ${e.message}`,
+      `No se pudo actualizar el estado en ${user.table}. Detalle: ${e.message}`,
       "warning",
     );
     return;

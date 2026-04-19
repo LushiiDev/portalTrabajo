@@ -125,6 +125,37 @@ async function registrarEmpresa(formData) {
   return false;
 }
 
+async function getProfileStatus(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("No se pudo consultar status del perfil:", error.message);
+      return null;
+    }
+    return String(data?.status || "activo").toLowerCase();
+  } catch (err) {
+    console.warn("Error consultando status del perfil:", err);
+    return null;
+  }
+}
+
+async function blockIfSuspended(user) {
+  const status = await getProfileStatus(user?.id);
+  if (status === "suspendido") {
+    await supabaseClient.auth.signOut();
+    alert("Tu cuenta está suspendida. Contacta al administrador.");
+    window.location.href = "./registroUsuario.html";
+    return true;
+  }
+  return false;
+}
+
 // ─── Login de Empresa ──────────────────────────────────────────────────────
 
 async function loginEmpresa(email, password) {
@@ -135,6 +166,10 @@ async function loginEmpresa(email, password) {
 
   if (error) {
     alert("Error al iniciar sesión: " + error.message);
+    return false;
+  }
+
+  if (await blockIfSuspended(data?.user)) {
     return false;
   }
 
@@ -162,6 +197,10 @@ async function verificarSesionEmpresa() {
   }
 
   const tipoCuenta = data.session.user?.user_metadata?.tipo_cuenta;
+
+  if (await blockIfSuspended(data.session.user)) {
+    return null;
+  }
 
   if (tipoCuenta !== "empresa") {
     await supabaseClient.auth.signOut();

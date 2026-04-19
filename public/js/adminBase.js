@@ -5,6 +5,11 @@ export const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY,
 );
 
+let adminCheckCache = {
+  userId: null,
+  isAdmin: null,
+};
+
 export function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -29,7 +34,61 @@ export async function requireSession() {
     window.location.href = "./registroUsuario.html";
     return null;
   }
+
+  const isAdmin = await validateAdminSession(data.session);
+  if (!isAdmin) {
+    await supabaseClient.auth.signOut();
+    alert("Acceso denegado: este usuario no tiene permisos de administrador.");
+    window.location.href = "./index.html";
+    return null;
+  }
+
   return data.session;
+}
+
+async function validateAdminSession(session) {
+  const user = session?.user;
+  if (!user?.id) return false;
+
+  const userMeta = user.user_metadata || {};
+  const appMeta = user.app_metadata || {};
+  const adminFromMeta = isAdminFromMeta(userMeta) || isAdminFromMeta(appMeta);
+  if (adminFromMeta) return true;
+
+  if (adminCheckCache.userId === user.id && adminCheckCache.isAdmin !== null) {
+    return adminCheckCache.isAdmin;
+  }
+
+  const token = session.access_token;
+  if (!token) {
+    adminCheckCache = { userId: user.id, isAdmin: false };
+    return false;
+  }
+
+  try {
+    const response = await fetch(resolveApiUrl("/api/admin/users"), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const isAdmin = response.ok;
+    adminCheckCache = { userId: user.id, isAdmin };
+    return isAdmin;
+  } catch {
+    adminCheckCache = { userId: user.id, isAdmin: false };
+    return false;
+  }
+}
+
+function isAdminFromMeta(meta) {
+  if (!meta) return false;
+  return (
+    meta.role === "admin" ||
+    meta.tipo_cuenta === "admin" ||
+    meta.is_admin === true
+  );
 }
 
 export async function apiFetch(path, options = {}) {
@@ -120,20 +179,8 @@ export function ensureAdminBanner(session) {
   const banner = document.getElementById("adminBanner");
   if (!banner) return;
 
-  const meta = session?.user?.user_metadata || {};
-  const isAdmin =
-    meta.role === "admin" ||
-    meta.tipo_cuenta === "admin" ||
-    meta.is_admin === true;
-
-  if (isAdmin) {
-    banner.classList.add("d-none");
-    return;
-  }
-
   banner.classList.remove("d-none");
-  banner.textContent =
-    "Aviso: este usuario no tiene rol admin en Supabase. Las acciones de admin pueden fallar si no tiene permisos.";
+  banner.classList.add("d-none");
 }
 
 function renderSessionInfo(session) {
@@ -187,11 +234,113 @@ export function showToast(message, type = "info") {
 export function openJsonModal(title, obj) {
   const modalEl = document.getElementById("jsonModal");
   const titleEl = document.getElementById("jsonModalTitle");
-  const preEl = document.getElementById("jsonModalPre");
-  if (!modalEl || !titleEl || !preEl || !window.bootstrap?.Modal) return;
+  const bodyEl = document.getElementById("jsonModalBody");
+  if (!modalEl || !titleEl || !bodyEl || !window.bootstrap?.Modal) return;
 
   titleEl.textContent = title;
-  preEl.textContent = JSON.stringify(obj, null, 2);
+  bodyEl.innerHTML = renderDetailRows(obj);
 
   window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function renderDetailRows(value, depth = 0, seen = new WeakSet()) {
+  if (!value || typeof value !== "object") {
+    return `<div class="text-muted">Sin datos disponibles.</div>`;
+  }
+
+  if (seen.has(value)) {
+    return `<span class="text-muted">[Referencia circular]</span>`;
+  }
+  seen.add(value);
+
+  const entries = Object.entries(value);
+  if (!entries.length) {
+    return `<div class="text-muted">Sin datos disponibles.</div>`;
+  }
+
+  const rows = entries
+    .map(([key, raw]) => {
+      return `
+        <tr>
+          <th class="w-25 text-secondary text-capitalize align-top">${escapeHtml(prettyFieldName(key))}</th>
+          <td class="text-break">${renderFieldValue(raw, depth + 1, seen)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <table class="table table-sm table-striped align-top mb-0">
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function prettyFieldName(key) {
+  return String(key || "")
+    .replaceAll("_", " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatFieldValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Sí" : "No";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") return value;
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function renderFieldValue(value, depth, seen) {
+  if (value === null || value === undefined || value === "") {
+    return `<span class="text-muted">-</span>`;
+  }
+
+  if (typeof value !== "object") {
+    return escapeHtml(formatFieldValue(value));
+  }
+
+  if (Array.isArray(value)) {
+    if (!value.length) return `<span class="text-muted">[]</span>`;
+    if (depth >= 3) return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+
+    const items = value
+      .map((item, idx) => {
+        if (item && typeof item === "object") {
+          return `
+            <div class="border rounded p-2">
+              <div class="small text-muted mb-1">Ítem ${idx + 1}</div>
+              ${renderDetailRows(item, depth + 1, seen)}
+            </div>
+          `;
+        }
+        return `<li>${escapeHtml(formatFieldValue(item))}</li>`;
+      })
+      .join("");
+
+    if (items.includes("<li>")) {
+      return `<ul class="mb-0 ps-3">${items}</ul>`;
+    }
+    return `<div class="d-flex flex-column gap-2">${items}</div>`;
+  }
+
+  if (depth >= 3) {
+    return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+  }
+
+  return `<div class="border rounded p-2 bg-light-subtle">${renderDetailRows(value, depth + 1, seen)}</div>`;
+}
+
+function escapeHtml(v) {
+  return String(v ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }

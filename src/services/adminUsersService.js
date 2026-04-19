@@ -14,6 +14,66 @@ async function listAuthUsers() {
   return data?.users || [];
 }
 
+function normalizeStatus(status) {
+  const v = String(status || "").toLowerCase();
+  if (v.includes("susp") || v.includes("ban") || v.includes("block")) return "suspendido";
+  if (v.includes("act") || v.includes("ok") || v.includes("enable")) return "activo";
+  return v || "activo";
+}
+
+function statusFromAuth(authUser) {
+  if (!authUser) return null;
+
+  const bannedUntil = authUser.banned_until ? new Date(authUser.banned_until) : null;
+  const isBanned = bannedUntil && !Number.isNaN(bannedUntil.getTime()) && bannedUntil.getTime() > Date.now();
+  if (isBanned) return "suspendido";
+
+  const fromMeta =
+    authUser.user_metadata?.status ||
+    authUser.app_metadata?.status ||
+    authUser.user_metadata?.estado ||
+    authUser.app_metadata?.estado;
+
+  return fromMeta ? normalizeStatus(fromMeta) : null;
+}
+
+function isMissingProfilesStatusColumn(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("status") && message.includes("profiles") && message.includes("column");
+}
+
+async function setProfileStatusInAuthMetadata(authUserId, status) {
+  if (!hasServiceRole) {
+    const err = new Error(
+      "No se puede suspender perfiles sin columna status en profiles y sin SUPABASE_SERVICE_ROLE_KEY.",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const normalized = normalizeStatus(status);
+
+  const { data: currentData, error: currentErr } = await supabaseAdmin.auth.admin.getUserById(authUserId);
+  if (currentErr) throw currentErr;
+
+  const currentUser = currentData?.user;
+  const userMetadata = { ...(currentUser?.user_metadata || {}), status: normalized };
+  const appMetadata = { ...(currentUser?.app_metadata || {}), status: normalized };
+
+  const { data: updatedData, error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+    user_metadata: userMetadata,
+    app_metadata: appMetadata,
+  });
+  if (updateErr) throw updateErr;
+
+  return {
+    id: authUserId,
+    status: normalized,
+    source: "auth_metadata",
+    auth: updatedData?.user || null,
+  };
+}
+
 export const getAdminUsers = async () => {
   const [profiles, companies, authUsers] = await Promise.all([
     safeSelect("profiles", "*"),
@@ -39,6 +99,7 @@ export const getAdminUsers = async () => {
   const mergedUsers = profiles.map((p) => {
     const company = companyByUserId.get(p.id) || null;
     const auth = authById.get(p.id) || null;
+    const authStatus = statusFromAuth(auth);
 
     if (company) {
       return {
@@ -53,7 +114,7 @@ export const getAdminUsers = async () => {
           "Empresa",
         email: auth?.email || company.email || p.email || null,
         role: "empleador",
-        status: company.status || company.estado || "activo",
+        status: company.status || company.estado || authStatus || "activo",
         created_at: auth?.created_at || company.created_at || p.created_at || null,
         last_sign_in_at: auth?.last_sign_in_at || null,
         raw: { profile: p, company, auth },
@@ -66,7 +127,7 @@ export const getAdminUsers = async () => {
       name: p.full_name || p.name || p.nombre || "Sin nombre",
       email: auth?.email || p.email || null,
       role: String(p.role || "").toLowerCase() === "admin" ? "admin" : "candidato",
-      status: p.status || p.estado || "activo",
+      status: p.status || p.estado || authStatus || "activo",
       created_at: auth?.created_at || p.created_at || null,
       last_sign_in_at: auth?.last_sign_in_at || null,
       raw: { profile: p, auth },
@@ -117,9 +178,30 @@ export const setUserStatus = async (table, id, status) => {
     throw err;
   }
 
+  const normalized = normalizeStatus(status);
+
+  if (table === "profiles") {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("profiles")
+        .update({ status: normalized })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      if (isMissingProfilesStatusColumn(error)) {
+        return setProfileStatusInAuthMetadata(id, normalized);
+      }
+      throw error;
+    }
+  }
+
   const { data, error } = await supabaseAdmin
-    .from(table)
-    .update({ status })
+    .from("companies")
+    .update({ status: normalized })
     .eq("id", id)
     .select()
     .single();

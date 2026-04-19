@@ -81,6 +81,22 @@ async function requireSession() {
 		return null;
 	}
 
+	const { data: profileData, error: profileError } = await supabaseClient
+		.from("profiles")
+		.select("status")
+		.eq("id", data.session.user.id)
+		.maybeSingle();
+
+	if (!profileError) {
+		const status = String(profileData?.status || "activo").toLowerCase();
+		if (status === "suspendido") {
+			await supabaseClient.auth.signOut();
+			alert("Tu cuenta está suspendida. Contacta al administrador.");
+			window.location.href = "./registroUsuario.html";
+			return null;
+		}
+	}
+
 	return data.session;
 }
 

@@ -51,10 +51,10 @@ function prettyStatus(status) {
 function statusBadgeClass(status) {
   const v = normalizeStatus(status);
   return v === "resuelto"
-    ? "badge-status"
+    ? "text-bg-success"
     : v === "revision"
-      ? "badge-status yellow"
-      : "badge-status red";
+      ? "text-bg-warning"
+      : "text-bg-danger";
 }
 
 function escapeHtml(v) {
@@ -150,28 +150,28 @@ function renderTable(tbody, items) {
 
       return `
         <tr>
-          <td><span class="badge-soft badge-role gray">${escapeHtml(i.type)}</span></td>
+          <td><span class="badge rounded-pill text-bg-secondary">${escapeHtml(i.type)}</span></td>
           <td class="fw-semibold">${escapeHtml(content)}</td>
           <td class="text-muted">${escapeHtml(i.author)}</td>
           <td class="text-muted">${escapeHtml(date)}</td>
-          <td><span class="badge-soft ${stCls}">${escapeHtml(st)}</span></td>
+          <td><span class="badge rounded-pill ${stCls}">${escapeHtml(st)}</span></td>
           <td class="text-end">
-            <button class="btn-action btn-view me-1" data-action="view" data-table="${i.table}" data-id="${i.id}" title="Ver">
+            <button class="btn btn-sm btn-outline-primary me-1" data-action="view" data-table="${i.table}" data-id="${i.id}" title="Ver">
               <i class="bi bi-eye"></i>
             </button>
             ${
               canResolve
                 ? `
-                  <button class="btn-action btn-warn me-1" data-action="review" data-table="${i.table}" data-id="${i.id}" title="Marcar en revisión">
+                  <button class="btn btn-sm btn-warning me-1" data-action="review" data-table="${i.table}" data-id="${i.id}" title="Marcar en revisión">
                     <i class="bi bi-hourglass-split"></i>
                   </button>
-                  <button class="btn-action btn-ok me-1" data-action="resolve" data-table="${i.table}" data-id="${i.id}" title="Resolver">
+                  <button class="btn btn-sm btn-success me-1" data-action="resolve" data-table="${i.table}" data-id="${i.id}" title="Resolver">
                     <i class="bi bi-check2"></i>
                   </button>
                 `
                 : ""
             }
-            <button class="btn-action btn-danger" data-action="delete" data-table="${i.table}" data-id="${i.id}" title="Eliminar">
+            <button class="btn btn-sm btn-danger" data-action="delete" data-table="${i.table}" data-id="${i.id}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </td>
