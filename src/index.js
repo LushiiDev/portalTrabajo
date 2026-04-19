@@ -1,6 +1,4 @@
 import express from 'express';
-import path from "path";
-import { fileURLToPath } from "url";
 import tipsRouter from './routes/tipsRouter.js';
 import jobsRouter from './routes/jobsRouter.js'
 import forumRepliesRouter from './routes/forumRepliesRouter.js'
@@ -36,15 +34,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const publicDir = path.join(__dirname, "..", "public");
-
-// Serve the frontend (static HTML/CSS/JS under /public)
-app.use(express.static(publicDir));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
+app.get('/', (req, res) => {
+  res.send('Hola mundo');
 });
 
 app.use('/jobs', jobsRouter);
