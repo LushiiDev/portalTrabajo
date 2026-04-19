@@ -4,10 +4,9 @@ import {
   daysAgo,
   openJsonModal,
   requireSession,
-  isDemoMode,
+  apiFetch,
   setActiveSidebar,
   showToast,
-  supabaseClient,
 } from "./adminBase.js";
 
 setActiveSidebar("adminforos.html");
@@ -24,20 +23,29 @@ const els = {
 
 let threads = [];
 let reviews = [];
-const demoMode = isDemoMode();
 
 function normalizeStatus(status) {
   const v = String(status || "").toLowerCase();
   if (v.includes("pend")) return "pendiente";
   if (v.includes("revis")) return "revision";
-  if (v.includes("resuel") || v.includes("close") || v.includes("done") || v.includes("aprob") || v.includes("rech"))
+  if (
+    v.includes("resuel") ||
+    v.includes("close") ||
+    v.includes("done") ||
+    v.includes("aprob") ||
+    v.includes("rech")
+  )
     return "resuelto";
   return v || "pendiente";
 }
 
 function prettyStatus(status) {
   const v = normalizeStatus(status);
-  return v === "revision" ? "En revisión" : v === "resuelto" ? "Resuelto" : "Pendiente";
+  return v === "revision"
+    ? "En revisión"
+    : v === "resuelto"
+      ? "Resuelto"
+      : "Pendiente";
 }
 
 function statusBadgeClass(status) {
@@ -65,57 +73,18 @@ function shortText(text, limit = 80) {
 }
 
 async function loadData() {
-  if (demoMode) {
-    threads = [
-      {
-        id: "t1",
-        title: "¿Cómo negociar el salario?",
-        content: "Comentario con lenguaje inapropiado y falta de respeto...",
-        user_id: "Usuario123",
-        status: "pendiente",
-        created_at: "2026-03-14T10:00:00Z",
-      },
-      {
-        id: "t2",
-        title: "Mejores empresas tech en Madrid",
-        content: "Spam con enlaces externos a sitios no relacionados...",
-        user_id: "TechGuru99",
-        status: "pendiente",
-        created_at: "2026-03-13T10:00:00Z",
-      },
-      {
-        id: "t3",
-        title: "Transición de frontend a full-stack",
-        content: "Publicación repetitiva que ya fue respondida...",
-        user_id: "DevNovato",
-        status: "resuelto",
-        created_at: "2026-03-11T10:00:00Z",
-      },
-    ];
-
-    reviews = [
-      {
-        id: "r1",
-        company_id: "TechCorp",
-        comment: "Review con insultos hacia la dirección...",
-        user_id: "EmpleadoX",
-        status: "pendiente",
-        created_at: "2026-03-12T10:00:00Z",
-      },
-    ];
-    return;
+  try {
+    const result = await apiFetch("/api/admin/moderation");
+    threads = result?.threads || [];
+    reviews = result?.reviews || [];
+  } catch (e) {
+    showToast(
+      "No se pudieron cargar datos de moderación: " + e.message,
+      "danger",
+    );
+    threads = [];
+    reviews = [];
   }
-
-  const threadsReq = supabaseClient.from("forum_threads").select("*").order("created_at", { ascending: false });
-  const reviewsReq = supabaseClient.from("reviews").select("*").order("created_at", { ascending: false });
-
-  const [{ data: tData, error: tErr }, { data: rData, error: rErr }] = await Promise.all([threadsReq, reviewsReq]);
-
-  if (tErr) showToast("No se pudieron cargar forum_threads: " + tErr.message, "danger");
-  if (rErr) showToast("No se pudieron cargar reviews: " + rErr.message, "danger");
-
-  threads = tData || [];
-  reviews = rData || [];
 }
 
 function toItems() {
@@ -146,8 +115,12 @@ function toItems() {
 
 function computeStats(items) {
   const total = items.length;
-  const pending = items.filter((i) => normalizeStatus(i.status) === "pendiente").length;
-  const review = items.filter((i) => normalizeStatus(i.status) === "revision").length;
+  const pending = items.filter(
+    (i) => normalizeStatus(i.status) === "pendiente",
+  ).length;
+  const review = items.filter(
+    (i) => normalizeStatus(i.status) === "revision",
+  ).length;
   const resolved7 = items.filter((i) => {
     if (normalizeStatus(i.status) !== "resuelto") return false;
     const d = daysAgo(i.date);
@@ -209,51 +182,42 @@ function renderTable(tbody, items) {
 }
 
 function findItem(table, id) {
-  if (table === "forum_threads") return threads.find((t) => String(t.id) === String(id));
-  if (table === "reviews") return reviews.find((r) => String(r.id) === String(id));
+  if (table === "forum_threads")
+    return threads.find((t) => String(t.id) === String(id));
+  if (table === "reviews")
+    return reviews.find((r) => String(r.id) === String(id));
   return null;
 }
 
 async function updateStatus(table, id, status) {
-  if (demoMode) {
-    showToast("Modo demo: status actualizado localmente.", "info");
-    if (table === "forum_threads") {
-      threads = threads.map((t) => (String(t.id) === String(id) ? { ...t, status } : t));
-      return threads.find((t) => String(t.id) === String(id)) || null;
-    }
-    if (table === "reviews") {
-      reviews = reviews.map((r) => (String(r.id) === String(id) ? { ...r, status } : r));
-      return reviews.find((r) => String(r.id) === String(id)) || null;
-    }
-    return null;
-  }
-
-  const { data, error } = await supabaseClient.from(table).update({ status }).eq("id", id).select().single();
-  if (error) {
+  try {
+    const updated = await apiFetch(
+      `/api/admin/moderation/${table}/${id}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      },
+    );
+    return updated;
+  } catch (e) {
     showToast(
       `No se pudo actualizar status en ${table}. ` +
-        `Asegúrate de que exista la columna 'status' y permisos/RLS. Detalle: ${error.message}`,
+        `Asegúrate de que exista columna 'status' y permisos/RLS. Detalle: ${e.message}`,
       "warning",
     );
     return null;
   }
-  return data;
 }
 
 async function deleteRow(table, id) {
-  if (demoMode) {
-    if (table === "forum_threads") threads = threads.filter((t) => String(t.id) !== String(id));
-    if (table === "reviews") reviews = reviews.filter((r) => String(r.id) !== String(id));
-    showToast("Modo demo: eliminado localmente.", "info");
-    return true;
-  }
-
   const ok = confirm(`¿Eliminar este registro de ${table}?`);
   if (!ok) return false;
-
-  const { error } = await supabaseClient.from(table).delete().eq("id", id);
-  if (error) {
-    showToast("No se pudo eliminar: " + error.message, "danger");
+  try {
+    await apiFetch(`/api/admin/moderation/${table}/${id}`, {
+      method: "DELETE",
+    });
+  } catch (e) {
+    showToast("No se pudo eliminar: " + e.message, "danger");
     return false;
   }
   return true;
@@ -288,8 +252,14 @@ function wireActions() {
       const updated = await updateStatus(table, id, "revision");
       if (updated) {
         showToast("Marcado en revisión.", "success");
-        if (table === "forum_threads") threads = threads.map((t) => (String(t.id) === String(id) ? updated : t));
-        if (table === "reviews") reviews = reviews.map((r) => (String(r.id) === String(id) ? updated : r));
+        if (table === "forum_threads")
+          threads = threads.map((t) =>
+            String(t.id) === String(id) ? updated : t,
+          );
+        if (table === "reviews")
+          reviews = reviews.map((r) =>
+            String(r.id) === String(id) ? updated : r,
+          );
         rerender();
       }
       return;
@@ -299,8 +269,14 @@ function wireActions() {
       const updated = await updateStatus(table, id, "resuelto");
       if (updated) {
         showToast("Marcado como resuelto.", "success");
-        if (table === "forum_threads") threads = threads.map((t) => (String(t.id) === String(id) ? updated : t));
-        if (table === "reviews") reviews = reviews.map((r) => (String(r.id) === String(id) ? updated : r));
+        if (table === "forum_threads")
+          threads = threads.map((t) =>
+            String(t.id) === String(id) ? updated : t,
+          );
+        if (table === "reviews")
+          reviews = reviews.map((r) =>
+            String(r.id) === String(id) ? updated : r,
+          );
         rerender();
       }
       return;
@@ -310,8 +286,10 @@ function wireActions() {
       const ok = await deleteRow(table, id);
       if (ok) {
         showToast("Eliminado.", "success");
-        if (table === "forum_threads") threads = threads.filter((t) => String(t.id) !== String(id));
-        if (table === "reviews") reviews = reviews.filter((r) => String(r.id) !== String(id));
+        if (table === "forum_threads")
+          threads = threads.filter((t) => String(t.id) !== String(id));
+        if (table === "reviews")
+          reviews = reviews.filter((r) => String(r.id) !== String(id));
         rerender();
       }
     }

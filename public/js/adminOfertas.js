@@ -3,10 +3,9 @@ import {
   formatDate,
   openJsonModal,
   requireSession,
-  isDemoMode,
+  apiFetch,
   setActiveSidebar,
   showToast,
-  supabaseClient,
 } from "./adminBase.js";
 
 setActiveSidebar("adminofertas.html");
@@ -23,19 +22,24 @@ const els = {
 };
 
 let allJobs = [];
-const demoMode = isDemoMode();
 
 function normalizeStatus(status) {
   const v = String(status || "").toLowerCase();
   if (v.includes("pend")) return "pendiente";
-  if (v.includes("aprob") || v.includes("accept") || v.includes("ok")) return "aprobada";
-  if (v.includes("rech") || v.includes("deny") || v.includes("reject")) return "rechazada";
+  if (v.includes("aprob") || v.includes("accept") || v.includes("ok"))
+    return "aprobada";
+  if (v.includes("rech") || v.includes("deny") || v.includes("reject"))
+    return "rechazada";
   return v || "pendiente";
 }
 
 function prettyStatus(status) {
   const v = normalizeStatus(status);
-  return v === "aprobada" ? "Aprobada" : v === "rechazada" ? "Rechazada" : "Pendiente";
+  return v === "aprobada"
+    ? "Aprobada"
+    : v === "rechazada"
+      ? "Rechazada"
+      : "Pendiente";
 }
 
 function statusBadgeClass(status) {
@@ -48,62 +52,26 @@ function statusBadgeClass(status) {
 }
 
 async function loadJobs() {
-  if (demoMode) {
-    allJobs = [
-      {
-        id: "j1",
-        title: "Frontend Developer",
-        location: "Madrid",
-        contract_type: "full-time",
-        status: "pendiente",
-        created_at: "2026-03-10T10:00:00Z",
-        company: "TechCorp",
-      },
-      {
-        id: "j2",
-        title: "Backend Developer",
-        location: "Barcelona",
-        contract_type: "full-time",
-        status: "aprobada",
-        created_at: "2026-03-08T10:00:00Z",
-        company: "InnovateSoft",
-      },
-      {
-        id: "j3",
-        title: "UX Designer",
-        location: "Valencia",
-        contract_type: "part-time",
-        status: "rechazada",
-        created_at: "2026-03-05T10:00:00Z",
-        company: "DesignHub",
-      },
-      {
-        id: "j4",
-        title: "Full Stack Developer",
-        location: "Remoto",
-        contract_type: "full-time",
-        status: "aprobada",
-        created_at: "2026-03-12T10:00:00Z",
-        company: "WebSolutions",
-      },
-    ];
-    return;
-  }
-
-  const { data, error } = await supabaseClient.from("job_posts").select("*").order("created_at", { ascending: false });
-  if (error) {
-    showToast("No se pudieron cargar job_posts: " + error.message, "danger");
+  try {
+    const result = await apiFetch("/api/admin/jobs");
+    allJobs = result?.jobs || [];
+  } catch (e) {
+    showToast("No se pudieron cargar ofertas: " + e.message, "danger");
     allJobs = [];
-    return;
   }
-  allJobs = data || [];
 }
 
 function computeStats(jobs) {
   els.statTotal.textContent = jobs.length;
-  els.statPending.textContent = jobs.filter((j) => normalizeStatus(j.status) === "pendiente").length;
-  els.statApproved.textContent = jobs.filter((j) => normalizeStatus(j.status) === "aprobada").length;
-  els.statRejected.textContent = jobs.filter((j) => normalizeStatus(j.status) === "rechazada").length;
+  els.statPending.textContent = jobs.filter(
+    (j) => normalizeStatus(j.status) === "pendiente",
+  ).length;
+  els.statApproved.textContent = jobs.filter(
+    (j) => normalizeStatus(j.status) === "aprobada",
+  ).length;
+  els.statRejected.textContent = jobs.filter(
+    (j) => normalizeStatus(j.status) === "rechazada",
+  ).length;
 }
 
 function applyFilters(jobs) {
@@ -114,12 +82,19 @@ function applyFilters(jobs) {
   return jobs.filter((j) => {
     const matchesQ =
       !q ||
-      String(j.title || "").toLowerCase().includes(q) ||
-      String(j.location || "").toLowerCase().includes(q) ||
-      String(j.contract_type || "").toLowerCase().includes(q);
+      String(j.title || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(j.location || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(j.contract_type || "")
+        .toLowerCase()
+        .includes(q);
 
     const matchesStatus = !status || normalizeStatus(j.status) === status;
-    const matchesContract = !contract || String(j.contract_type || "").toLowerCase() === contract;
+    const matchesContract =
+      !contract || String(j.contract_type || "").toLowerCase() === contract;
     return matchesQ && matchesStatus && matchesContract;
   });
 }
@@ -187,44 +162,33 @@ function getById(id) {
 }
 
 async function updateJobStatus(job, status) {
-  if (demoMode) {
-    job.status = status;
-    showToast("Modo demo: status actualizado localmente.", "info");
-    return true;
-  }
-  const { data, error } = await supabaseClient
-    .from("job_posts")
-    .update({ status })
-    .eq("id", job.id)
-    .select()
-    .single();
-
-  if (error) {
+  try {
+    const updated = await apiFetch(`/api/admin/jobs/${job.id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    Object.assign(job, updated);
+  } catch (e) {
     showToast(
       `No se pudo actualizar status. ` +
-        `Asegúrate de que la tabla job_posts tenga una columna 'status' y permisos/RLS. Detalle: ${error.message}`,
+        `Asegúrate de que job_posts tenga columna 'status' y permisos/RLS. Detalle: ${e.message}`,
       "warning",
     );
     return false;
   }
-
-  Object.assign(job, data);
   showToast("Estado actualizado: " + prettyStatus(job.status), "success");
   return true;
 }
 
 async function deleteJob(job) {
-  if (demoMode) {
-    allJobs = allJobs.filter((j) => String(j.id) !== String(job.id));
-    showToast("Modo demo: eliminado localmente.", "info");
-    return true;
-  }
-  const ok = confirm("¿Eliminar esta oferta? (Se borrará el registro en job_posts)");
+  const ok = confirm(
+    "¿Eliminar esta oferta? (Se borrará el registro en job_posts)",
+  );
   if (!ok) return false;
-
-  const { error } = await supabaseClient.from("job_posts").delete().eq("id", job.id);
-  if (error) {
-    showToast("No se pudo eliminar: " + error.message, "danger");
+  try {
+    await apiFetch(`/api/admin/jobs/${job.id}`, { method: "DELETE" });
+  } catch (e) {
+    showToast("No se pudo eliminar: " + e.message, "danger");
     return false;
   }
 

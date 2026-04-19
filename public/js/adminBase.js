@@ -5,16 +5,6 @@ export const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY,
 );
 
-export function isDemoMode() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("demo") === "1") return true;
-  } catch {
-    // ignore
-  }
-  return false;
-}
-
 export function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -34,23 +24,52 @@ export function daysAgo(value) {
 }
 
 export async function requireSession() {
-  // Demo mode: allow opening the admin pages without login just to see the layout.
-  if (isDemoMode()) {
-    return {
-      user: {
-        id: "demo-user",
-        email: "demo@localhost",
-        user_metadata: { role: "admin", tipo_cuenta: "admin" },
-      },
-    };
-  }
-
   const { data, error } = await supabaseClient.auth.getSession();
   if (error || !data?.session) {
     window.location.href = "./registroUsuario.html";
     return null;
   }
   return data.session;
+}
+
+export async function apiFetch(path, options = {}) {
+  const session = await requireSession();
+  if (!session) {
+    throw new Error("No hay sesión activa.");
+  }
+
+  const accessToken = session.access_token;
+  const headers = new Headers(options.headers || {});
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  if (options.body && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(path, {
+    ...options,
+    headers,
+  });
+
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!response.ok) {
+    const message =
+      (data && typeof data === "object" && (data.message || data.error)) ||
+      response.statusText ||
+      "Error en la API";
+    throw new Error(message);
+  }
+  return data;
 }
 
 export function setActiveSidebar(hrefSuffix) {
@@ -78,7 +97,7 @@ export function ensureAdminBanner(session) {
 
   banner.classList.remove("d-none");
   banner.textContent =
-    "Aviso: este usuario no tiene un rol 'admin' en Supabase (user_metadata). La UI funciona en modo demo; el backend/RLS debería bloquear acciones no autorizadas.";
+    "Aviso: este usuario no tiene rol admin en Supabase. Las acciones de admin pueden fallar si no tiene permisos.";
 }
 
 export function showToast(message, type = "info") {
