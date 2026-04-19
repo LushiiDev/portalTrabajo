@@ -14,7 +14,6 @@ const els = {
   tbody: document.getElementById("jobsTbody"),
   search: document.getElementById("searchInput"),
   statusFilter: document.getElementById("statusFilter"),
-  contractFilter: document.getElementById("contractFilter"),
   statTotal: document.getElementById("statTotal"),
   statPending: document.getElementById("statPending"),
   statActive: document.getElementById("statActive"),
@@ -82,7 +81,6 @@ function computeStats(jobs) {
 function applyFilters(jobs) {
   const q = (els.search.value || "").trim().toLowerCase();
   const status = (els.statusFilter.value || "").trim().toLowerCase();
-  const contract = (els.contractFilter.value || "").trim().toLowerCase();
 
   return jobs.filter((j) => {
     const matchesQ =
@@ -92,15 +90,10 @@ function applyFilters(jobs) {
         .includes(q) ||
       String(j.location || "")
         .toLowerCase()
-        .includes(q) ||
-      String(j.contract_type || "")
-        .toLowerCase()
         .includes(q);
 
     const matchesStatus = !status || normalizeStatus(j.status) === status;
-    const matchesContract =
-      !contract || String(j.contract_type || "").toLowerCase() === contract;
-    return matchesQ && matchesStatus && matchesContract;
+    return matchesQ && matchesStatus;
   });
 }
 
@@ -211,7 +204,7 @@ function rerender() {
 }
 
 function wireEvents() {
-  [els.search, els.statusFilter, els.contractFilter].forEach((el) => {
+  [els.search, els.statusFilter].forEach((el) => {
     if (!el) return;
     el.addEventListener("input", rerender);
     el.addEventListener("change", rerender);
