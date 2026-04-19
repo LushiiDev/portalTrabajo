@@ -17,7 +17,7 @@ const els = {
   contractFilter: document.getElementById("contractFilter"),
   statTotal: document.getElementById("statTotal"),
   statPending: document.getElementById("statPending"),
-  statApproved: document.getElementById("statApproved"),
+  statActive: document.getElementById("statActive"),
   statRejected: document.getElementById("statRejected"),
 };
 
@@ -26,8 +26,9 @@ let allJobs = [];
 function normalizeStatus(status) {
   const v = String(status || "").toLowerCase();
   if (v.includes("pend")) return "pendiente";
-  if (v.includes("aprob") || v.includes("accept") || v.includes("ok"))
-    return "aprobada";
+  if (v.includes("inact") || v.includes("desact")) return "inactivo";
+  if (v.includes("activ") || v.includes("aprob") || v.includes("accept") || v.includes("ok"))
+    return "activo";
   if (v.includes("rech") || v.includes("deny") || v.includes("reject"))
     return "rechazada";
   return v || "pendiente";
@@ -35,8 +36,10 @@ function normalizeStatus(status) {
 
 function prettyStatus(status) {
   const v = normalizeStatus(status);
-  return v === "aprobada"
-    ? "Aprobada"
+  return v === "activo"
+    ? "Activo"
+    : v === "inactivo"
+      ? "Inactiva"
     : v === "rechazada"
       ? "Rechazada"
       : "Pendiente";
@@ -44,8 +47,10 @@ function prettyStatus(status) {
 
 function statusBadgeClass(status) {
   const v = normalizeStatus(status);
-  return v === "aprobada"
+  return v === "activo"
     ? "badge-status"
+    : v === "inactivo"
+      ? "badge-role gray"
     : v === "rechazada"
       ? "badge-status red"
       : "badge-status yellow";
@@ -66,8 +71,8 @@ function computeStats(jobs) {
   els.statPending.textContent = jobs.filter(
     (j) => normalizeStatus(j.status) === "pendiente",
   ).length;
-  els.statApproved.textContent = jobs.filter(
-    (j) => normalizeStatus(j.status) === "aprobada",
+  els.statActive.textContent = jobs.filter(
+    (j) => normalizeStatus(j.status) === "activo",
   ).length;
   els.statRejected.textContent = jobs.filter(
     (j) => normalizeStatus(j.status) === "rechazada",
@@ -180,20 +185,22 @@ async function updateJobStatus(job, status) {
   return true;
 }
 
-async function deleteJob(job) {
+async function deactivateJob(job) {
   const ok = confirm(
-    "¿Eliminar esta oferta? (Se borrará el registro en job_posts)",
+    "¿Marcar esta oferta como inactiva?",
   );
   if (!ok) return false;
   try {
-    await apiFetch(`/api/admin/jobs/${job.id}`, { method: "DELETE" });
+    const updated = await apiFetch(`/api/admin/jobs/${job.id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "inactivo" }),
+    });
+    Object.assign(job, updated);
   } catch (e) {
-    showToast("No se pudo eliminar: " + e.message, "danger");
+    showToast("No se pudo inactivar: " + e.message, "danger");
     return false;
   }
-
-  allJobs = allJobs.filter((j) => String(j.id) !== String(job.id));
-  showToast("Oferta eliminada.", "success");
+  showToast("Oferta marcada como inactiva.", "success");
   return true;
 }
 
@@ -224,7 +231,7 @@ function wireEvents() {
         return;
       }
       if (action === "approve") {
-        await updateJobStatus(job, "aprobada");
+        await updateJobStatus(job, "activo");
         rerender();
         return;
       }
@@ -234,7 +241,7 @@ function wireEvents() {
         return;
       }
       if (action === "delete") {
-        await deleteJob(job);
+        await deactivateJob(job);
         rerender();
       }
     });
