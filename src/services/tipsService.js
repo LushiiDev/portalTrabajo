@@ -8,11 +8,12 @@ export const getAllTips = async () => {
   return data;
 };
 
-export const postTip = async (title, description, category) => {
+export const postTip = async (title, description, category, user_id = null) => {
   const payload = {
     title,
     description,
     category,
+    user_id,
   };
 
   const { data, error } = await supabase

@@ -12,7 +12,7 @@ export const getObtenerTodasLasReviews = async (req, res, next) => {
 
 export const postPublicarReview = async (req, res, next) => {
   try {
-    const { company_id, user_id, rating, comment, status = "activa" } = req.body;
+    const { company_id, user_id, rating, comment, status = "activo" } = req.body;
 
     if (!company_id || !user_id || !rating || !comment) {
       return res.status(400).json({ message: "Faltan datos obligatorios para publicar la review." });

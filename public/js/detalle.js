@@ -8,6 +8,13 @@ function getQueryParams() {
 
 let perfilesById = new Map();
 
+function normalizeContentStatus(status) {
+  const v = String(status || "").toLowerCase();
+  if (v.includes("inact") || v.includes("elim") || v.includes("close") || v.includes("off")) return "inactivo";
+  if (v.includes("act") || v.includes("open") || v.includes("publ") || v.includes("ok")) return "activo";
+  return v || "activo";
+}
+
 function getProfileName(userId) {
   if (!userId) return "";
   const profile = perfilesById.get(userId);
@@ -47,12 +54,12 @@ function renderTipDetail(tip) {
       <div class="text-muted" style="font-size:14px;line-height:1.8">${description.replace(/\n/g, "<br>")}</div>
     </div>
   `;
-  document.getElementById("replies-section").innerHTML = `
-    <div class="mt-4">
-      <h5>Respuestas</h5>
-      <p class="text-muted">Este consejo no tiene respuestas. Puedes volver al foro o crear un nuevo tema si deseas compartir tu comentario.</p>
-    </div>
-  `;
+
+  const repliesSection = document.getElementById("replies-section");
+  if (repliesSection) {
+    repliesSection.innerHTML = "";
+    repliesSection.style.display = "none";
+  }
 }
 
 function renderThreadDetail(thread, replies) {
@@ -95,6 +102,11 @@ function renderThreadDetail(thread, replies) {
     </div>
   `;
 
+  const repliesSection = document.getElementById("replies-section");
+  if (repliesSection) {
+    repliesSection.style.display = "block";
+  }
+
   attachReplyHandler(thread.id);
 }
 
@@ -113,7 +125,7 @@ async function createReply(threadId, content) {
     thread_id: threadId,
     user_id: userId,
     content,
-    status: "active",
+    status: "activo",
   };
 
   const response = await fetch(`${API_BASE_URL}/forum_replies`, {
@@ -192,7 +204,7 @@ async function loadThread(id) {
   }
 
   const replies = (allReplies || [])
-    .filter((reply) => reply.thread_id === id)
+    .filter((reply) => reply.thread_id === id && normalizeContentStatus(reply.status) === "activo")
     .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 
   renderThreadDetail(thread, replies);

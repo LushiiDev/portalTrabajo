@@ -11,8 +11,8 @@ export const getAllTips = async (req, res, next) => {
 
 export const postTip = async (req, res, next) => {
   try {
-    const { title, description, category } = req.body;
-    const newTip = await tipsService.postTip(title, description, category);
+    const { title, description, category, user_id } = req.body;
+    const newTip = await tipsService.postTip(title, description, category, user_id || null);
     res.json(newTip);
   } catch (err) {
     return next(err);

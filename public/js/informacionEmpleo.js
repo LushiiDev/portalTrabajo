@@ -22,7 +22,9 @@ function escapeHtml(value) {
 }
 
 function normalizeReviewStatus(status) {
-  return String(status || "activa").trim().toLowerCase() || "activa";
+  const v = String(status || "activo").trim().toLowerCase();
+  if (v.includes("inact") || v.includes("elim") || v.includes("close")) return "inactivo";
+  return "activo";
 }
 
 function formatDateTime(value) {
@@ -156,7 +158,7 @@ function syncReviewFormState() {
   form.classList.remove("d-none");
 
   const existingReview = companyReviews.find((review) => {
-    return String(review.user_id) === String(sesionActiva.user.id) && normalizeReviewStatus(review.status) !== "eliminada";
+    return String(review.user_id) === String(sesionActiva.user.id) && normalizeReviewStatus(review.status) !== "inactivo";
   });
 
   currentUserReviewId = existingReview?.id || null;
@@ -183,7 +185,7 @@ function renderCompanyReviews() {
     return;
   }
 
-  const activeReviews = companyReviews.filter((review) => normalizeReviewStatus(review.status) !== "eliminada");
+  const activeReviews = companyReviews.filter((review) => normalizeReviewStatus(review.status) !== "inactivo");
   const reviewCount = activeReviews.length;
   const average = reviewCount
     ? activeReviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / reviewCount
@@ -245,7 +247,7 @@ async function loadCompanyReviews(companyId) {
   try {
     const [profilesResponse, reviewsResponse] = await Promise.all([
       fetch(`${API_BASE}/api/profiles`),
-      fetch(`${API_BASE}/reviews?company_id=${encodeURIComponent(companyId)}&status=activa`),
+      fetch(`${API_BASE}/reviews?company_id=${encodeURIComponent(companyId)}&status=activo`),
     ]);
 
     const profiles = profilesResponse.ok ? await profilesResponse.json() : [];

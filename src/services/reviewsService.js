@@ -1,8 +1,9 @@
 import { supabase } from "../config/supabase.js";
 
 function normalizeReviewStatus(status) {
-  const value = String(status || "activa").trim().toLowerCase();
-  return value || "activa";
+  const value = String(status || "activo").trim().toLowerCase();
+  if (value.includes("inact") || value.includes("elim") || value.includes("close")) return "inactivo";
+  return "activo";
 }
 
 export const getAllReviews = async ({ companyId = null, status = null } = {}) => {

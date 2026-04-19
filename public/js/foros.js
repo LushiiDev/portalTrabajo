@@ -3,6 +3,13 @@ let foros = [];
 let replies = [];
 let perfilesById = new Map();
 
+function normalizeContentStatus(status) {
+  const v = String(status || "").toLowerCase();
+  if (v.includes("inact") || v.includes("elim") || v.includes("close") || v.includes("off")) return "inactivo";
+  if (v.includes("act") || v.includes("open") || v.includes("publ") || v.includes("ok")) return "activo";
+  return v || "activo";
+}
+
 function getProfileName(userId) {
   if (!userId) return "";
   const profile = perfilesById.get(userId);
@@ -42,7 +49,8 @@ async function loadConsejos() {
   try {
     const response = await fetch(`${API_BASE_URL}/tips`);
     if (!response.ok) throw new Error("No fue posible cargar los consejos");
-    consejos = await response.json();
+    const allTips = await response.json();
+    consejos = (allTips || []).filter((tip) => normalizeContentStatus(tip.status) === "activo");
   } catch (error) {
     console.error("Error cargando consejos:", error.message);
     container.innerHTML = "<p class='text-danger'>No fue posible cargar los consejos.</p>";
@@ -85,6 +93,8 @@ async function loadForos() {
 
     foros = (await threadsResponse.json()) || [];
     replies = (await repliesResponse.json()) || [];
+    foros = foros.filter((thread) => normalizeContentStatus(thread.status) === "activo");
+    replies = replies.filter((reply) => normalizeContentStatus(reply.status) === "activo");
   } catch (error) {
     console.error("Error cargando foros:", error.message);
     container.innerHTML = "<p class='text-danger'>No fue posible cargar los temas del foro.</p>";
@@ -147,7 +157,7 @@ async function createThread(title, content, category) {
     title,
     content,
     category,
-    status: "open",
+    status: "activo",
     user_id: userId,
   };
 
@@ -167,10 +177,12 @@ async function createThread(title, content, category) {
 }
 
 async function createTip(title, description, category) {
+  const userId = await getCurrentUserId();
   const payload = {
     title,
     description,
     category,
+    user_id: userId,
   };
 
   const response = await fetch(`${API_BASE_URL}/tips`, {
