@@ -51,6 +51,18 @@ function prettyStatus(status) {
   return v === "suspendido" ? "Suspendido" : "Activo";
 }
 
+function roleBadgeClass(role) {
+  const v = normalizeRole(role);
+  if (v === "admin") return "text-bg-primary";
+  if (v === "empleador") return "text-bg-info";
+  return "text-bg-secondary";
+}
+
+function statusBadgeClass(status) {
+  const v = normalizeStatus(status);
+  return v === "suspendido" ? "text-bg-warning text-dark" : "text-bg-success";
+}
+
 async function loadUsers() {
   if (demoMode) {
     // Mock data to visualize the layout without login / database access
@@ -244,32 +256,33 @@ function render(users) {
   els.tbody.innerHTML = users
     .map((u) => {
       const role = prettyRole(u.rol);
-      const roleCls = normalizeRole(u.rol) === "candidato" ? "badge-role gray" : "badge-role";
+      const roleCls = roleBadgeClass(u.rol);
       const status = prettyStatus(u.estado);
-      const statusCls = normalizeStatus(u.estado) === "suspendido" ? "badge-status red" : "badge-status";
+      const statusCls = statusBadgeClass(u.estado);
       const reg = formatDate(u.registro);
       const last = u.ultimo ? formatDate(u.ultimo) : "-";
 
       const toggleLabel = normalizeStatus(u.estado) === "suspendido" ? "Activar" : "Suspender";
       const toggleIcon = normalizeStatus(u.estado) === "suspendido" ? "bi-unlock" : "bi-slash-circle";
-      const toggleBtnCls = normalizeStatus(u.estado) === "suspendido" ? "btn-ok" : "btn-warn";
+      const toggleBtnCls =
+        normalizeStatus(u.estado) === "suspendido" ? "btn-outline-success" : "btn-outline-warning";
 
       return `
         <tr>
           <td class="fw-semibold">${escapeHtml(u.nombre)}</td>
           <td class="text-muted">${escapeHtml(u.email || "-")}</td>
-          <td><span class="badge-soft ${roleCls}">${escapeHtml(role)}</span></td>
-          <td><span class="badge-soft ${statusCls}">${escapeHtml(status)}</span></td>
+          <td><span class="badge rounded-pill ${roleCls}">${escapeHtml(role)}</span></td>
+          <td><span class="badge rounded-pill ${statusCls}">${escapeHtml(status)}</span></td>
           <td class="text-muted">${escapeHtml(reg)}</td>
           <td class="text-muted">${escapeHtml(last)}</td>
           <td class="text-end">
-            <button class="btn-action btn-view me-1" data-action="view" data-id="${u.id}" title="Ver">
+            <button class="btn btn-sm btn-outline-primary me-1" data-action="view" data-id="${u.id}" title="Ver">
               <i class="bi bi-eye"></i>
             </button>
-            <button class="btn-action ${toggleBtnCls} me-1" data-action="toggle" data-id="${u.id}" title="${toggleLabel}">
+            <button class="btn btn-sm ${toggleBtnCls} me-1" data-action="toggle" data-id="${u.id}" title="${toggleLabel}">
               <i class="bi ${toggleIcon}"></i>
             </button>
-            <button class="btn-action btn-danger" data-action="delete" data-id="${u.id}" title="Eliminar">
+            <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${u.id}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </td>

@@ -40,7 +40,11 @@ function prettyStatus(status) {
 
 function statusBadgeClass(status) {
   const v = normalizeStatus(status);
-  return v === "aprobada" ? "badge-status" : v === "rechazada" ? "badge-status red" : "badge-status yellow";
+  return v === "aprobada"
+    ? "text-bg-success"
+    : v === "rechazada"
+      ? "text-bg-danger"
+      : "text-bg-warning text-dark";
 }
 
 async function loadJobs() {
@@ -150,25 +154,25 @@ function render(jobs) {
           <td class="fw-semibold">${escapeHtml(j.title || "Sin título")}</td>
           <td class="text-muted">${escapeHtml(j.location || "-")}</td>
           <td class="text-muted">${escapeHtml(contract)}</td>
-          <td><span class="badge-soft ${stCls}">${escapeHtml(st)}</span></td>
+          <td><span class="badge rounded-pill ${stCls}">${escapeHtml(st)}</span></td>
           <td class="text-muted">${escapeHtml(date)}</td>
           <td class="text-end">
-            <button class="btn-action btn-view me-1" data-action="view" data-id="${j.id}" title="Ver">
+            <button class="btn btn-sm btn-outline-primary me-1" data-action="view" data-id="${j.id}" title="Ver">
               <i class="bi bi-eye"></i>
             </button>
             ${
               showModeration
                 ? `
-                  <button class="btn-action btn-ok me-1" data-action="approve" data-id="${j.id}" title="Aprobar">
+                  <button class="btn btn-sm btn-outline-success me-1" data-action="approve" data-id="${j.id}" title="Aprobar">
                     <i class="bi bi-check2"></i>
                   </button>
-                  <button class="btn-action btn-warn me-1" data-action="reject" data-id="${j.id}" title="Rechazar">
+                  <button class="btn btn-sm btn-outline-warning me-1" data-action="reject" data-id="${j.id}" title="Rechazar">
                     <i class="bi bi-x"></i>
                   </button>
                 `
                 : ""
             }
-            <button class="btn-action btn-danger" data-action="delete" data-id="${j.id}" title="Eliminar">
+            <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${j.id}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </td>
