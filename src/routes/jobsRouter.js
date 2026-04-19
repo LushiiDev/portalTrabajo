@@ -7,6 +7,8 @@ const router = Router();
 
 router.get('/', jobsController.getObtenerTodosLosTrabajos);
 
+router.get('/:id', jobsController.getObtenerTrabajoPorId);
+
 router.post('/', runValidations(createJobValidator),jobsController.postPublicarTrabajo);
 
 router.delete("/:id", jobsController.deleteTrabajo);

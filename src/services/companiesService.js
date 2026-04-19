@@ -19,14 +19,14 @@ export const getCompanyById = async (id) => {
 export const createCompany = async (
   user_id, name, description, logo_url,
   website, sector, size, founded_year,
-  location, linkedin_url, facebook_url
+  location, linkedin_url, facebook_url, NIT
 ) => {
   const { data, error } = await supabase
     .from('companies')
     .insert([{
       user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     }])
     .select()
     .single();
@@ -37,7 +37,7 @@ export const createCompany = async (
 export const updateCompany = async (
   id, user_id, name, description, logo_url,
   website, sector, size, founded_year,
-  location, linkedin_url, facebook_url
+  location, linkedin_url, facebook_url, NIT
 ) => {
   const { data: existing, error: findError } = await supabase.from('companies').select('*').eq('id', id).single();
 
@@ -45,7 +45,7 @@ export const updateCompany = async (
   const { data, error } = await supabase.from('companies').update({
       user_id, name, description, logo_url,
       website, sector, size, founded_year,
-      location, linkedin_url, facebook_url
+      location, linkedin_url, facebook_url, NIT
     })
     .eq('id', id).select().single();
   if (error) throw error;

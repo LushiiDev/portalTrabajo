@@ -24,12 +24,12 @@
           <div
             class="rounded-2 d-flex align-items-center justify-content-center p-2"
           >
-            <img
+            <a href="./index.html"><img
               src="../img/LogoEmpresa.png"
               alt="Bootstrap"
               width="150px"
               height="50px"
-            />
+            /></a>
           </div>
         </div>
         <ul class="nav flex-column gap-1">
@@ -86,6 +86,7 @@
         <!-- Form Card -->
         <div class="card border rounded-3 shadow-none">
           <div class="card-body p-4">
+            <form id="publishJobForm" novalidate>
             <!-- Título del puesto -->
             <div class="mb-3">
               <label class="form-label small fw-medium"
@@ -93,8 +94,11 @@
               >
               <input
                 type="text"
+                id="jobTitle"
+                name="title"
                 class="form-control form-control-sm bg-light border"
                 placeholder="ej. Frontend Developer"
+                required
               />
             </div>
 
@@ -105,9 +109,13 @@
                 <span class="text-danger">*</span></label
               >
               <textarea
+                id="jobDescription"
+                name="description"
                 class="form-control bg-light border"
                 rows="5"
                 placeholder="Describe las responsabilidades, requisitos y beneficios del puesto..."
+                minlength="100"
+                required
               ></textarea>
             </div>
             <p class="text-muted mb-3" style="font-size: 11px">
@@ -122,20 +130,28 @@
                 >
                 <input
                   type="text"
+                  id="jobLocation"
+                  name="location"
                   class="form-control form-control-sm bg-light border"
                   placeholder="Ciudad, País"
+                  required
                 />
               </div>
               <div class="col-md-6">
                 <label class="form-label small fw-medium"
                   >Tipo de contrato <span class="text-danger">*</span></label
                 >
-                <select class="form-select form-select-sm bg-light border">
+                <select
+                  id="jobContractType"
+                  name="contractType"
+                  class="form-select form-select-sm bg-light border"
+                  required
+                >
                   <option value="" disabled selected>Selecciona</option>
-                  <option>Tiempo completo</option>
-                  <option>Medio tiempo</option>
-                  <option>Freelance</option>
-                  <option>Prácticas</option>
+                  <option value="Tiempo completo">Tiempo completo</option>
+                  <option value="Medio tiempo">Medio tiempo</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Prácticas">Prácticas</option>
                 </select>
               </div>
             </div>
@@ -144,19 +160,27 @@
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label small fw-medium"
-                  >Rango salarial (EUR)
+                  >Rango salarial (USD)
                   <span class="text-danger">*</span></label
                 >
                 <div class="d-flex gap-2">
                   <input
                     type="number"
+                    id="jobSalaryMin"
+                    name="salaryMin"
                     class="form-control form-control-sm bg-light border"
                     placeholder="Mínimo"
+                    min="0"
+                    required
                   />
                   <input
                     type="number"
+                    id="jobSalaryMax"
+                    name="salaryMax"
                     class="form-control form-control-sm bg-light border"
                     placeholder="Máximo"
+                    min="0"
+                    required
                   />
                 </div>
               </div>
@@ -165,11 +189,16 @@
                   >Nivel de experiencia
                   <span class="text-danger">*</span></label
                 >
-                <select class="form-select form-select-sm bg-light border">
+                <select
+                  id="jobExperienceLevel"
+                  name="experienceLevel"
+                  class="form-select form-select-sm bg-light border"
+                  required
+                >
                   <option value="" disabled selected>Selecciona</option>
-                  <option>Junior (0-2 años)</option>
-                  <option>Semi-Senior (2-4 años)</option>
-                  <option>Senior (4+ años)</option>
+                  <option value="Junior (0-2 años)">Junior (0-2 años)</option>
+                  <option value="Semi-Senior (2-4 años)">Semi-Senior (2-4 años)</option>
+                  <option value="Senior (4+ años)">Senior (4+ años)</option>
                 </select>
               </div>
             </div>
@@ -184,34 +213,37 @@
                   <input
                     class="form-check-input"
                     type="radio"
-                    name="modalidad"
+                    name="workMode"
+                    value="Presencial"
                     id="fulltime"
                     checked
                   />
                   <label class="form-check-label small" for="fulltime"
-                    >Full-time</label
+                    >Presencial</label
                   >
                 </div>
                 <div class="form-check">
                   <input
                     class="form-check-input"
                     type="radio"
-                    name="modalidad"
+                    name="workMode"
+                    value="Hibrido"
                     id="parttime"
                   />
                   <label class="form-check-label small" for="parttime"
-                    >Part-time</label
+                    >Hibrido</label
                   >
                 </div>
                 <div class="form-check">
                   <input
                     class="form-check-input"
                     type="radio"
-                    name="modalidad"
+                    name="workMode"
+                    value="Remoto"
                     id="remote"
                   />
                   <label class="form-check-label small" for="remote"
-                    >Remote</label
+                    >Remoto</label
                   >
                 </div>
               </div>
@@ -219,18 +251,23 @@
 
             <!-- Botones -->
             <div class="d-flex gap-2">
-              <button class="btn btn-primary btn-sm px-4">
+              <button type="submit" class="btn btn-primary btn-sm px-4">
                 Publicar oferta
               </button>
-              <button class="btn btn-outline-secondary btn-sm px-3">
+              <button type="button" id="cancelPublishBtn" class="btn btn-outline-secondary btn-sm px-3">
                 Cancelar
               </button>
             </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/compania.js"></script>
+    <script src="./js/app.js"></script>
+    <script src="./js/publicarOferta.js"></script>
   </body>
 </html>

@@ -20,22 +20,37 @@ export const getJobByTitle = async (nombre) => {
   return data;
 };
 
+export const getJobById = async (id) => {
+  const { data, error } = await supabase
+    .from("job_posts")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
 export const postPublicJob = async (
+  company_id,
   title,
   description,
   location,
   salaryMin,
   salaryMax,
   contractType,
+  workMode,
   experienceLevel,
 ) => {
   const payload = {
+    company_id,
     title,
     description,
     location,
     salary_min: salaryMin,
     salary_max: salaryMax,
     contract_type: contractType,
+    work_mode: workMode,
     experience_level: experienceLevel,
   };
 

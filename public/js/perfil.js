@@ -1,6 +1,9 @@
 const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (typeof API_BASE_URL === 'undefined') {
+  var API_BASE_URL = "http://127.0.0.1:3000";
+}
 
 const ACTIVE_TAB_KEY = "perfilActiveTabId";
 
@@ -8,18 +11,29 @@ let currentUser = null;
 let currentProfile = null;
 let currentCvObjectUrl = null;
 let selectedCvFile = null;
+let selectedAvatarFile = null;
+let selectedAvatarPreviewUrl = null;
+let profileSkills = [];
 
 let alertKeywords = [];
 let alertRows = [];
 let availableJobs = [];
 
 const profileForm = document.getElementById("profileForm");
+const headlineInput = document.getElementById("headline");
 const biografiaInput = document.getElementById("biografia");
 const ubicacionInput = document.getElementById("ubicacion");
 
 const profileNameHeader = document.getElementById("profileNameHeader");
 const profileHeadlineHeader = document.getElementById("profileHeadlineHeader");
 const profileRoleBadge = document.getElementById("profileRoleBadge");
+const chooseAvatarBtn = document.getElementById("chooseAvatarBtn");
+const avatarFileInput = document.getElementById("avatarFileInput");
+const profileAvatarImage = document.getElementById("profileAvatarImage");
+const profileAvatarFallback = document.getElementById("profileAvatarFallback");
+const skillsContainer = document.getElementById("skillsContainer");
+const habilidadesInput = document.getElementById("habilidades");
+const addSkillBtn = document.getElementById("addSkillBtn");
 
 const cvFileInput = document.getElementById("cvFileInput");
 const cvPreviewFrame = document.getElementById("cvPreviewFrame");
@@ -33,6 +47,8 @@ const applicationCountBadge = document.getElementById("applicationCountBadge");
 
 const keywordInput = document.getElementById("keywordInput");
 const addKeywordBtn = document.getElementById("addKeywordBtn");
+const notifyWebCheck = document.getElementById("notifyWebCheck");
+const notifyEmailCheck = document.getElementById("notifyEmailCheck");
 const keywordsContainer = document.getElementById("keywordsContainer");
 const jobsAlertsList = document.getElementById("jobsAlertsList");
 const alertsEmptyState = document.getElementById("alertsEmptyState");
@@ -68,11 +84,40 @@ async function requireSession() {
 	return data.session;
 }
 
+async function apiFetchJson(path, options = {}) {
+	const response = await fetch(API_BASE_URL + path, {
+		headers: {
+			"Content-Type": "application/json",
+			...(options.headers || {}),
+		},
+		...options,
+	});
+
+	let payload = null;
+	try {
+		payload = await response.json();
+	} catch (error) {
+		payload = null;
+	}
+
+	if (!response.ok) {
+		throw new Error(payload?.message || "Error en API");
+	}
+
+	return payload;
+}
+
 function setupNavbarForSession(session) {
 	const authActions = document.getElementById("authActions");
 	const userMenu = document.getElementById("userMenu");
 	const userEmailLabel = document.getElementById("userEmailLabel");
 	const logoutBtn = document.getElementById("logoutBtn");
+	const profileIcon = userMenu?.querySelector(".dropdown-menu .bi-person");
+	const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
+
+	const meta = session.user?.user_metadata || {};
+	const tipoCuenta = meta.tipo_cuenta || "usuario";
+	const userLabel = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
 
 	if (authActions) {
 		authActions.classList.add("d-none");
@@ -83,7 +128,11 @@ function setupNavbarForSession(session) {
 	}
 
 	if (userEmailLabel) {
-		userEmailLabel.textContent = session.user?.email || "Usuario";
+		userEmailLabel.textContent = userLabel;
+	}
+
+	if (profileLink) {
+		profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
 	}
 
 	if (logoutBtn) {
@@ -139,6 +188,33 @@ function setupEventListeners() {
 			}
 		});
 	}
+
+	if (chooseAvatarBtn && avatarFileInput) {
+		chooseAvatarBtn.addEventListener("click", function () {
+			avatarFileInput.click();
+		});
+
+		avatarFileInput.addEventListener("change", onAvatarInputChange);
+	}
+
+	if (addSkillBtn) {
+		addSkillBtn.addEventListener("click", onAddSkillClick);
+	}
+
+	if (habilidadesInput) {
+		habilidadesInput.addEventListener("keydown", function (event) {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				onAddSkillClick();
+			}
+		});
+	}
+
+	if (headlineInput && profileHeadlineHeader) {
+		headlineInput.addEventListener("input", function () {
+			profileHeadlineHeader.textContent = headlineInput.value.trim() || "Completa tu perfil profesional";
+		});
+	}
 }
 
 function isMissingColumnError(error) {
@@ -186,18 +262,147 @@ function getMetadataFullName() {
 	return "Usuario";
 }
 
-async function loadProfile() {
-	const byId = await supabaseClient
-		.from("profiles")
-		.select("*")
-		.eq("id", currentUser.id)
-		.maybeSingle();
-
-	if (byId.error && byId.error.code !== "PGRST116") {
-		console.error("Error consultando perfil por id:", byId.error);
+function getSkillsStorageKey() {
+	if (!currentUser?.id) {
+		return "profileSkills";
 	}
 
-	currentProfile = byId.data || null;
+	return "profileSkills:" + currentUser.id;
+}
+
+function parseSkills(rawSkills) {
+	if (Array.isArray(rawSkills)) {
+		return Array.from(new Set(rawSkills.map(function (item) {
+			return String(item || "").trim();
+		}).filter(Boolean)));
+	}
+
+	if (typeof rawSkills === "string") {
+		return Array.from(new Set(rawSkills
+			.split(",")
+			.map(function (item) {
+				return item.trim();
+			})
+			.filter(Boolean)));
+	}
+
+	return [];
+}
+
+function loadSkillsFromLocalStorage() {
+	const storageKey = getSkillsStorageKey();
+	const rawValue = localStorage.getItem(storageKey);
+	if (!rawValue) {
+		return [];
+	}
+
+	try {
+		return parseSkills(JSON.parse(rawValue));
+	} catch (error) {
+		return parseSkills(rawValue);
+	}
+}
+
+function persistSkills() {
+	const storageKey = getSkillsStorageKey();
+	localStorage.setItem(storageKey, JSON.stringify(profileSkills));
+}
+
+function renderProfileAvatar(avatarUrl) {
+	if (!profileAvatarImage || !profileAvatarFallback) {
+		return;
+	}
+
+	if (avatarUrl) {
+		profileAvatarImage.src = avatarUrl;
+		profileAvatarImage.classList.remove("d-none");
+		profileAvatarFallback.classList.add("d-none");
+		return;
+	}
+
+	profileAvatarImage.classList.add("d-none");
+	profileAvatarFallback.classList.remove("d-none");
+}
+
+function renderSkills() {
+	if (!skillsContainer) {
+		return;
+	}
+
+	skillsContainer.innerHTML = "";
+
+	if (!profileSkills.length) {
+		const hint = document.createElement("span");
+		hint.className = "text-muted small";
+		hint.textContent = "Agrega habilidades para destacar tu perfil.";
+		skillsContainer.appendChild(hint);
+		return;
+	}
+
+	profileSkills.forEach(function (skill) {
+		const badge = document.createElement("span");
+		badge.className = "badge text-bg-primary d-inline-flex align-items-center gap-2";
+		badge.innerHTML =
+			'<span>' + skill + '</span><button type="button" class="btn-close btn-close-white" aria-label="Eliminar habilidad"></button>';
+
+		badge.querySelector("button").addEventListener("click", function () {
+			profileSkills = profileSkills.filter(function (item) {
+				return item !== skill;
+			});
+			persistSkills();
+			renderSkills();
+		});
+
+		skillsContainer.appendChild(badge);
+	});
+}
+
+function onAddSkillClick() {
+	const rawSkill = habilidadesInput?.value || "";
+	const normalizedSkill = rawSkill.trim();
+	if (!normalizedSkill) {
+		return;
+	}
+
+	const exists = profileSkills.some(function (item) {
+		return item.toLowerCase() === normalizedSkill.toLowerCase();
+	});
+
+	if (exists) {
+		habilidadesInput.value = "";
+		return;
+	}
+
+	profileSkills.push(normalizedSkill);
+	persistSkills();
+	renderSkills();
+	habilidadesInput.value = "";
+}
+
+function onAvatarInputChange(event) {
+	const file = event.target.files?.[0];
+	if (!file) {
+		return;
+	}
+
+	if (!file.type.startsWith("image/")) {
+		alert("Selecciona una imagen valida.");
+		avatarFileInput.value = "";
+		return;
+	}
+
+	selectedAvatarFile = file;
+	selectedAvatarPreviewUrl = URL.createObjectURL(file);
+	renderProfileAvatar(selectedAvatarPreviewUrl);
+}
+
+async function loadProfile() {
+	try {
+		currentProfile = await apiFetchJson("/api/profiles/" + currentUser.id);
+	} catch (error) {
+		currentProfile = null;
+	}
+
 	applyProfileToUI(currentProfile);
 }
 
@@ -205,6 +410,7 @@ function applyProfileToUI(profile) {
 	const fullName = profile?.full_name || getMetadataFullName();
 	const headline = profile?.headline || "Completa tu perfil profesional";
 	const role = profile?.role || "Candidato";
+	const profileAvatar = selectedAvatarPreviewUrl || profile?.avatar_url || "";
 
 	if (profileNameHeader) {
 		profileNameHeader.textContent = fullName;
@@ -217,6 +423,21 @@ function applyProfileToUI(profile) {
 	if (profileRoleBadge) {
 		profileRoleBadge.textContent = role;
 	}
+
+	if (headlineInput) {
+		headlineInput.value = profile?.headline || "";
+	}
+
+	renderProfileAvatar(profileAvatar);
+
+	const incomingSkills = parseSkills(profile?.skills);
+	if (incomingSkills.length) {
+		profileSkills = incomingSkills;
+		persistSkills();
+	} else {
+		profileSkills = loadSkillsFromLocalStorage();
+	}
+	renderSkills();
 
 	if (biografiaInput) {
 		biografiaInput.value = profile?.bio || "";
@@ -246,28 +467,54 @@ async function onProfileSubmit(event) {
 	event.preventDefault();
 
 	try {
+		let avatarUrl = currentProfile?.avatar_url || null;
+		if (selectedAvatarFile) {
+			const uploadedAvatarUrl = await uploadAvatarToStorage(selectedAvatarFile);
+			if (!uploadedAvatarUrl) {
+				throw new Error("No se obtuvo URL publica para el avatar");
+			}
+
+			avatarUrl = uploadedAvatarUrl;
+			selectedAvatarFile = null;
+			selectedAvatarPreviewUrl = uploadedAvatarUrl;
+			if (avatarFileInput) {
+				avatarFileInput.value = "";
+			}
+		}
+
 		const updates = {
 			id: currentUser.id,
 			full_name: currentProfile?.full_name || getMetadataFullName(),
-			headline: currentProfile?.headline || profileHeadlineHeader?.textContent || "",
+			headline: headlineInput?.value?.trim() || "",
 			bio: biografiaInput?.value?.trim() || "",
 			location: ubicacionInput?.value || null,
-			avatar_url: currentProfile?.avatar_url || null,
+			avatar_url: avatarUrl,
+			skills: profileSkills,
 			cv_url: currentProfile?.cv_url || null,
 			role: currentProfile?.role || "Candidato",
 		};
 
-		const { data, error } = await supabaseClient
-			.from("profiles")
-			.upsert(updates, { onConflict: "id" })
-			.select()
-			.single();
-
-		if (error) {
-			throw error;
+		if (currentProfile?.id) {
+			currentProfile = await apiFetchJson("/api/profiles/" + currentUser.id, {
+				method: "PUT",
+				body: JSON.stringify(updates),
+			});
+		} else {
+			currentProfile = await apiFetchJson("/api/profiles", {
+				method: "POST",
+				body: JSON.stringify(updates),
+			});
 		}
 
-		currentProfile = data;
+		if (!currentProfile?.skills) {
+			currentProfile = {
+				...(currentProfile || {}),
+				skills: profileSkills,
+			};
+		}
+
+		persistSkills();
+		selectedAvatarPreviewUrl = currentProfile?.avatar_url || selectedAvatarPreviewUrl;
 		applyProfileToUI(currentProfile);
 		alert("Perfil guardado correctamente.");
 	} catch (error) {
@@ -296,6 +543,39 @@ function mapStatusBadgeClass(statusValue) {
 	}
 
 	return "secondary";
+}
+
+function formatApplicationStatus(statusValue) {
+	const normalized = String(statusValue || "pendiente").trim().toLowerCase();
+
+	if (normalized === "en_revision") {
+		return "En revision";
+	}
+
+	if (normalized === "aceptado") {
+		return "Aceptado";
+	}
+
+	if (normalized === "rechazado") {
+		return "Rechazado";
+	}
+
+	if (normalized === "entrevista") {
+		return "Entrevista";
+	}
+
+	if (normalized === "pendiente") {
+		return "Pendiente";
+	}
+
+	return normalized
+		.replace(/_/g, " ")
+		.split(" ")
+		.filter(Boolean)
+		.map(function (part) {
+			return part.charAt(0).toUpperCase() + part.slice(1);
+		})
+		.join(" ");
 }
 
 function formatDate(dateValue) {
@@ -338,13 +618,14 @@ function renderApplications(rows) {
 		const modality = jobData?.contract_type || application.modality || application.contract_type || "-";
 		const status = application.status || "pendiente";
 		const badgeClass = mapStatusBadgeClass(status);
+		const statusLabel = formatApplicationStatus(status);
 
 		row.innerHTML =
 			"<td>" + title + "</td>" +
 			"<td>" + company + "</td>" +
 			"<td>" + date + "</td>" +
 			"<td>" + modality + "</td>" +
-			'<td><span class="badge text-bg-' + badgeClass + '">' + status + "</span></td>";
+			'<td><span class="badge text-bg-' + badgeClass + '">' + statusLabel + "</span></td>";
 
 		applicationsTableBody.appendChild(row);
 	});
@@ -352,17 +633,44 @@ function renderApplications(rows) {
 
 async function loadApplications() {
 	try {
-		const { data, error } = await supabaseClient
-			.from("applications")
-			.select("id, job_post_id, candidate_id, cv_url, status, applied_at, job_posts(title, location, contract_type)")
-			.eq("candidate_id", currentUser.id)
-			.order("applied_at", { ascending: false });
+		const [applications, jobs, companies] = await Promise.all([
+			apiFetchJson("/applications"),
+			apiFetchJson("/jobs"),
+			apiFetchJson("/api/companies").catch(function () {
+				return [];
+			}),
+		]);
 
-		if (error) {
-			throw error;
-		}
+		const jobMap = new Map((jobs || []).map(function (job) {
+			return [job.id, job];
+		}));
 
-		renderApplications(data || []);
+		const companyMap = new Map((companies || []).map(function (company) {
+			return [company.id, company.name || company.razon_social || "Empresa"];
+		}));
+
+		const ownApplications = (applications || [])
+			.filter(function (application) {
+				return (application.candidate_id || application.user_id) === currentUser.id;
+			})
+			.map(function (application) {
+				const jobPostId = application.job_post_id || application.job_id;
+				const relatedJob = jobMap.get(jobPostId) || null;
+				const companyName = relatedJob?.company_id
+					? companyMap.get(relatedJob.company_id) || "No disponible"
+					: "No disponible";
+
+				return {
+					...application,
+					job_posts: relatedJob,
+					company_name: application.company_name || companyName,
+				};
+			})
+			.sort(function (a, b) {
+				return new Date(b.applied_at || b.created_at || 0) - new Date(a.applied_at || a.created_at || 0);
+			});
+
+		renderApplications(ownApplications);
 	} catch (error) {
 		console.error("Error cargando postulaciones:", error);
 		renderApplications([]);
@@ -430,26 +738,51 @@ function onCvFileChange(event) {
 }
 
 async function uploadCvToStorage(file) {
-	const buckets = ["CVS", "cvs", "cv", "resumes"];
-	let lastError = null;
+	const fileAsBase64 = await new Promise(function (resolve, reject) {
+		const reader = new FileReader();
+		reader.onload = function () {
+			const dataUrl = String(reader.result || "");
+			resolve(dataUrl.split(",")[1] || "");
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(file);
+	});
 
-	for (const bucketName of buckets) {
-		const filePath = currentUser.id + "/" + Date.now() + "-" + sanitizeFileName(file.name);
-		const { error } = await supabaseClient.storage.from(bucketName).upload(filePath, file, { upsert: true });
+	const response = await apiFetchJson("/api/profiles/" + currentUser.id + "/cv-upload", {
+		method: "POST",
+		body: JSON.stringify({
+			fileName: sanitizeFileName(file.name),
+			fileType: file.type,
+			fileDataBase64: fileAsBase64,
+		}),
+	});
 
-		if (error) {
-			lastError = error;
-			if ((error.message || "").toLowerCase().includes("bucket not found")) {
-				continue;
-			}
-			continue;
-		}
+	currentProfile = response?.profile || currentProfile;
+	return response?.cvUrl || null;
+}
 
-		const { data } = supabaseClient.storage.from(bucketName).getPublicUrl(filePath);
-		return data?.publicUrl || null;
-	}
+async function uploadAvatarToStorage(file) {
+	const fileAsBase64 = await new Promise(function (resolve, reject) {
+		const reader = new FileReader();
+		reader.onload = function () {
+			const dataUrl = String(reader.result || "");
+			resolve(dataUrl.split(",")[1] || "");
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(file);
+	});
 
-	throw lastError || new Error("No se pudo subir el archivo");
+	const response = await apiFetchJson("/api/profiles/" + currentUser.id + "/avatar-upload", {
+		method: "POST",
+		body: JSON.stringify({
+			fileName: sanitizeFileName(file.name),
+			fileType: file.type,
+			fileDataBase64: fileAsBase64,
+		}),
+	});
+
+	currentProfile = response?.profile || currentProfile;
+	return response?.avatarUrl || null;
 }
 
 async function onUploadCvClick() {
@@ -468,28 +801,6 @@ async function onUploadCvClick() {
 			throw new Error("No se obtuvo URL publica para el CV");
 		}
 
-		const payload = {
-			id: currentUser.id,
-			full_name: currentProfile?.full_name || getMetadataFullName(),
-			headline: currentProfile?.headline || profileHeadlineHeader?.textContent || "",
-			bio: biografiaInput?.value?.trim() || "",
-			location: ubicacionInput?.value || null,
-			avatar_url: currentProfile?.avatar_url || null,
-			cv_url: cvUrl,
-			role: currentProfile?.role || "Candidato",
-		};
-
-		const { data, error } = await supabaseClient
-			.from("profiles")
-			.upsert(payload, { onConflict: "id" })
-			.select()
-			.single();
-
-		if (error) {
-			throw error;
-		}
-
-		currentProfile = data;
 		setCvPreview(cvUrl, isPdfUrl(cvUrl));
 
 		cvUploadMessage.className = "small text-success";
@@ -612,12 +923,26 @@ function renderSuggestedJobs() {
 async function loadAlertsAndJobs() {
 	try {
 		const [alertsResponse, jobsResponse] = await Promise.all([
-			fetchRowsByUser("alerts", ["user_id"], "created_at"),
-			supabaseClient.from("job_posts").select("*").order("created_at", { ascending: false }),
+			apiFetchJson("/alerts"),
+			apiFetchJson("/jobs"),
 		]);
 
-		alertRows = alertsResponse || [];
-		availableJobs = jobsResponse.data || [];
+		alertRows = (alertsResponse || []).filter(function (row) {
+			return row.user_id === currentUser.id;
+		});
+		availableJobs = jobsResponse || [];
+
+		if (notifyEmailCheck) {
+			notifyEmailCheck.checked = alertRows.some(function (row) {
+				return Boolean(row.notify_email);
+			});
+		}
+
+		if (notifyWebCheck) {
+			notifyWebCheck.checked = !alertRows.length || alertRows.some(function (row) {
+				return row.notify_web !== false;
+			});
+		}
 
 		alertKeywords = Array.from(
 			new Set(
@@ -642,6 +967,13 @@ async function onAddKeywordClick() {
 		return;
 	}
 
+	const notifyWeb = notifyWebCheck ? notifyWebCheck.checked : true;
+	const notifyEmail = notifyEmailCheck ? notifyEmailCheck.checked : false;
+	if (!notifyWeb && !notifyEmail) {
+		alert("Selecciona al menos un canal de notificacion (app o correo).");
+		return;
+	}
+
 	if (alertKeywords.includes(keyword)) {
 		keywordInput.value = "";
 		return;
@@ -654,17 +986,22 @@ async function onAddKeywordClick() {
 
 	const payload = {
 		keyword,
-		location: ubicacionInput?.value || null,
+		location: null,
 		user_id: currentUser.id,
+		notify_web: notifyWeb,
+		notify_email: notifyEmail,
 	};
 
-	const { data, error } = await supabaseClient.from("alerts").insert([payload]).select().single();
-	if (error) {
-		console.error("No se pudo guardar la alerta:", error);
-		return;
-	}
+	try {
+		const data = await apiFetchJson("/alerts", {
+			method: "POST",
+			body: JSON.stringify(payload),
+		});
 
-	alertRows.push(data);
+		alertRows.push(data);
+	} catch (error) {
+		console.error("No se pudo guardar la alerta:", error);
+	}
 }
 
 async function removeKeyword(keyword) {
@@ -683,8 +1020,11 @@ async function removeKeyword(keyword) {
 		return;
 	}
 
-	const { error } = await supabaseClient.from("alerts").delete().eq("id", found.id);
-	if (error) {
+	try {
+		await apiFetchJson("/alerts/" + found.id, {
+			method: "DELETE",
+		});
+	} catch (error) {
 		console.error("No se pudo eliminar la alerta:", error);
 		return;
 	}
