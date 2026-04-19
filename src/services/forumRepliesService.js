@@ -1,5 +1,11 @@
 import { supabase } from "../config/supabase.js";
 
+function normalizeReplyStatus(status) {
+  const value = String(status || "activo").trim().toLowerCase();
+  if (value.includes("inact") || value.includes("elim") || value.includes("close")) return "inactivo";
+  return "activo";
+}
+
 export const getAllReplies = async () => {
   const { data, error } = await supabase.from("forum_replies").select("*");
   if (error) {
@@ -9,12 +15,16 @@ export const getAllReplies = async () => {
 };
 
 export const postforumReplies = async (
+  thread_id,
+  user_id,
   content,
   status
 ) => {
   const payload = {
+    thread_id,
+    user_id,
     content,
-    status,
+    status: normalizeReplyStatus(status),
   };
   const { data, error } = await supabase
     .from("forum_replies")
@@ -47,9 +57,14 @@ export const deleteforumReplies = async (id) => {
 };
 
 export const updateReply = async (id, replyData) => {
+  const payload = { ...replyData };
+  if (Object.prototype.hasOwnProperty.call(payload, "status")) {
+    payload.status = normalizeReplyStatus(payload.status);
+  }
+
   const { data, error } = await supabase
     .from("forum_replies")
-    .update(replyData)
+    .update(payload)
     .eq("id", id)
     .select()
     .single();

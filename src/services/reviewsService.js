@@ -1,7 +1,23 @@
 import { supabase } from "../config/supabase.js";
 
-export const getAllReviews = async () => {
-  const { data, error } = await supabase.from("reviews").select("*");
+function normalizeReviewStatus(status) {
+  const value = String(status || "activo").trim().toLowerCase();
+  if (value.includes("inact") || value.includes("elim") || value.includes("close")) return "inactivo";
+  return "activo";
+}
+
+export const getAllReviews = async ({ companyId = null, status = null } = {}) => {
+  let query = supabase.from("reviews").select("*").order("created_at", { ascending: false });
+
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
+
+  if (status) {
+    query = query.eq("status", normalizeReviewStatus(status));
+  }
+
+  const { data, error } = await query;
   if (error) {
     throw error;
   }
@@ -20,7 +36,7 @@ export const postPublicReview = async (
     user_id: userId,
     rating,
     comment,
-    status,
+    status: normalizeReviewStatus(status),
   };
 
   const { data, error } = await supabase
@@ -46,9 +62,15 @@ export const deleteReview = async (id) => {
 };
 
 export const updateReview = async (id, updates) => {
+  const payload = { ...updates };
+
+  if (Object.prototype.hasOwnProperty.call(payload, "status")) {
+    payload.status = normalizeReviewStatus(payload.status);
+  }
+
   const { data, error } = await supabase
     .from("reviews")
-    .update(updates)
+    .update(payload)
     .eq("id", id)
     .select()
     .single();

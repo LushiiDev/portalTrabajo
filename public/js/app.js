@@ -1,5 +1,6 @@
 const SUPABASE_URL = "https://unyqdgntdqwauzckzoky.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_vaV2z3ugubTKsqcbgk8prw_wTWQsXJS";
+const API_BASE_URL = "http://127.0.0.1:3000";
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
@@ -21,6 +22,74 @@ function actualizarEstadoCampos(contenedor, habilitar) {
   });
 }
 
+// ─── Crear perfil de usuario en el backend ─────────────────────────────────
+
+async function crearPerfilUsuario(userId, nombre, apellido) {
+  try {
+    const payload = {
+      id: userId,
+      full_name: `${nombre} ${apellido}`,
+      headline: "",
+      bio: "",
+      location: "",
+      avatar_url: "",
+      cv_url: "",
+      role: ""
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/profiles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error response:", errorText);
+      return false;
+    }
+
+    await response.json();
+    return true;
+  } catch (err) {
+    console.error("Error al conectar con el backend:", err);
+    return false;
+  }
+}
+
+async function getProfileStatus(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("No se pudo consultar status del perfil:", error.message);
+      return null;
+    }
+    return String(data?.status || "activo").toLowerCase();
+  } catch (err) {
+    console.warn("Error consultando status del perfil:", err);
+    return null;
+  }
+}
+
+async function blockIfSuspended(user) {
+  const status = await getProfileStatus(user?.id);
+  if (status === "suspendido") {
+    await supabaseClient.auth.signOut();
+    alert("Tu cuenta está suspendida. Contacta al administrador.");
+    window.location.href = "./registroUsuario.html";
+    return true;
+  }
+  return false;
+}
+
 async function actualizarNavbarAuth() {
   const authActions = document.getElementById("authActions");
   const userMenu = document.getElementById("userMenu");
@@ -38,12 +107,21 @@ async function actualizarNavbarAuth() {
     return;
   }
 
+  if (await blockIfSuspended(session.user)) return;
+
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
   const meta = session.user?.user_metadata || {};
+  const tipoCuenta = meta.tipo_cuenta || "usuario";
   const label = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
   if (userEmailLabel) userEmailLabel.textContent = label;
+
+  const profileIcon = userMenu.querySelector(".dropdown-menu .bi-person");
+  const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
+  if (profileLink) {
+    profileLink.href = tipoCuenta === "empresa" ? "./dashBoardEmpresa.html" : "./perfil.html";
+  }
 
   if (logoutBtn) {
     logoutBtn.onclick = async () => {
@@ -109,6 +187,9 @@ function initAuthPage() {
 
       if (error) { alert("Error al registrarte: " + error.message); return; }
       if (data?.user) {
+        // Crear perfil en el backend
+        await crearPerfilUsuario(data.user.id, nombre, apellido);
+        
         alert("Registro exitoso. Revisa tu correo para confirmar la cuenta.");
         registroForm.reset();
       } else {
@@ -143,6 +224,8 @@ function initAuthPage() {
 
       if (error) { alert("Error al iniciar sesión: " + error.message); return; }
 
+      if (await blockIfSuspended(data?.user)) return;
+
       const tipoCuenta = data?.user?.user_metadata?.tipo_cuenta || "usuario";
 
       if (tipoCuenta === "empresa") {
@@ -151,7 +234,7 @@ function initAuthPage() {
         return;
       }
 
-      window.location.href = "./index.html";
+      window.location.href = document.referrer || "./index.html";
     });
   }
 }

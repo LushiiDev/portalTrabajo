@@ -1,5 +1,11 @@
 import { supabase } from "../config/supabase.js";
 
+function normalizeThreadStatus(status) {
+  const value = String(status || "activo").trim().toLowerCase();
+  if (value.includes("inact") || value.includes("elim") || value.includes("close")) return "inactivo";
+  return "activo";
+}
+
 export const getAllThreads = async () => {
   const { data, error } = await supabase.from("forum_threads").select("*");
   if (error) {
@@ -9,16 +15,18 @@ export const getAllThreads = async () => {
 };
 
 export const postforumThreads = async (
+  user_id,
   title,
   content,
   category,
   status
 ) => {
   const payload = {
+    user_id,
     title,
     content,
     category,
-    status,
+    status: normalizeThreadStatus(status),
   };
   const { data, error } = await supabase
     .from("forum_threads")
@@ -51,9 +59,14 @@ export const deleteforumThreads = async (id) => {
 };
 
 export const updateThread = async (id, threadData) => {
+  const payload = { ...threadData };
+  if (Object.prototype.hasOwnProperty.call(payload, "status")) {
+    payload.status = normalizeThreadStatus(payload.status);
+  }
+
   const { data, error } = await supabase
     .from("forum_threads")
-    .update(threadData)
+    .update(payload)
     .eq("id", id)
     .select()
     .single();

@@ -12,11 +12,15 @@ export const getAllReplies = async(req, res, next) => {
 export const postforumReplies = async (req, res, next) => {
     try{
         const { 
+            thread_id,
+            user_id,
             content,
             status
         } = req.body;
 
         const newReply = await forumRepliesService.postforumReplies(
+            thread_id,
+            user_id,
             content,
             status
         );

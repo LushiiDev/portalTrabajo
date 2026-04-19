@@ -53,6 +53,68 @@ async function registrarEmpresa(formData) {
   }
 
   if (data?.user) {
+    // PASO 1: Crear perfil en el backend
+    console.log("Creando perfil para empresa:", data.user.id);
+    try {
+      const profileResponse = await fetch(`${API_BASE_URL}/api/profiles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: data.user.id,
+          full_name: nombreEmpresa,
+          headline: "",
+          bio: "",
+          location: "",
+          avatar_url: "",
+          cv_url: "",
+          role: ""
+        })
+      });
+
+      if (!profileResponse.ok) {
+        console.error("Error al crear el perfil de la empresa");
+      } else {
+        console.log("Perfil de empresa creado");
+      }
+    } catch (err) {
+      console.error("Error al conectar con el backend (perfil):", err);
+    }
+
+    // PASO 2: Crear registro de empresa en el backend
+    console.log("Creando datos de empresa:", data.user.id);
+    try {
+      const companyResponse = await fetch(`${API_BASE_URL}/api/companies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: data.user.id,
+          name: nombreEmpresa,
+          description: "",
+          logo_url: "",
+          website: sitioWeb,
+          sector: "",
+          size: "",
+          founded_year: null,
+          location: "",
+          linkedin_url: "",
+          facebook_url: "",
+          NIT: nit
+        })
+      });
+
+      if (!companyResponse.ok) {
+        console.error("Error al crear la empresa en el backend");
+      } else {
+        console.log("Empresa creada exitosamente");
+      }
+    } catch (err) {
+      console.error("Error al conectar con el backend (empresa):", err);
+    }
+
     alert(
       "¡Empresa registrada exitosamente! Revisa tu correo para confirmar la cuenta."
     );
@@ -60,6 +122,37 @@ async function registrarEmpresa(formData) {
   }
 
   alert("No se pudo crear la cuenta. Intenta de nuevo.");
+  return false;
+}
+
+async function getProfileStatus(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("No se pudo consultar status del perfil:", error.message);
+      return null;
+    }
+    return String(data?.status || "activo").toLowerCase();
+  } catch (err) {
+    console.warn("Error consultando status del perfil:", err);
+    return null;
+  }
+}
+
+async function blockIfSuspended(user) {
+  const status = await getProfileStatus(user?.id);
+  if (status === "suspendido") {
+    await supabaseClient.auth.signOut();
+    alert("Tu cuenta está suspendida. Contacta al administrador.");
+    window.location.href = "./registroUsuario.html";
+    return true;
+  }
   return false;
 }
 
@@ -73,6 +166,10 @@ async function loginEmpresa(email, password) {
 
   if (error) {
     alert("Error al iniciar sesión: " + error.message);
+    return false;
+  }
+
+  if (await blockIfSuspended(data?.user)) {
     return false;
   }
 
@@ -100,6 +197,10 @@ async function verificarSesionEmpresa() {
   }
 
   const tipoCuenta = data.session.user?.user_metadata?.tipo_cuenta;
+
+  if (await blockIfSuspended(data.session.user)) {
+    return null;
+  }
 
   if (tipoCuenta !== "empresa") {
     await supabaseClient.auth.signOut();
@@ -131,5 +232,46 @@ async function actualizarNavbarEmpresa() {
       await supabaseClient.auth.signOut();
       window.location.href = "./registroUsuario.html";
     };
+  }
+}
+
+// ─── Obtener datos de empresa por usuario ID ──────────────────────────────
+
+async function obtenerDatosEmpresa(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/companies`);
+    if (!response.ok) throw new Error("Error al obtener empresas");
+    
+    const companies = await response.json();
+    const empresa = companies.find(c => c.user_id === userId);
+    
+    return empresa || null;
+  } catch (err) {
+    console.error("Error al obtener datos de empresa:", err);
+    return null;
+  }
+}
+
+// ─── Actualizar datos de empresa ───────────────────────────────────────────
+
+async function actualizarDatosEmpresa(companyId, datosEmpresa) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(datosEmpresa)
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al actualizar empresa");
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error("Error al actualizar empresa:", err);
+    alert("Error al actualizar datos de la empresa");
+    return null;
   }
 }

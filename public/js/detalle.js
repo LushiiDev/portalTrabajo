@@ -6,6 +6,33 @@ function getQueryParams() {
   };
 }
 
+let perfilesById = new Map();
+
+function normalizeContentStatus(status) {
+  const v = String(status || "").toLowerCase();
+  if (v.includes("inact") || v.includes("elim") || v.includes("close") || v.includes("off")) return "inactivo";
+  if (v.includes("act") || v.includes("open") || v.includes("publ") || v.includes("ok")) return "activo";
+  return v || "activo";
+}
+
+function getProfileName(userId) {
+  if (!userId) return "";
+  const profile = perfilesById.get(userId);
+  return (profile?.full_name || "").trim();
+}
+
+async function loadProfiles() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profiles`);
+    if (!response.ok) throw new Error("No fue posible cargar perfiles");
+    const profiles = await response.json();
+    perfilesById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+  } catch (error) {
+    console.error("Error cargando perfiles:", error.message);
+    perfilesById = new Map();
+  }
+}
+
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -27,17 +54,17 @@ function renderTipDetail(tip) {
       <div class="text-muted" style="font-size:14px;line-height:1.8">${description.replace(/\n/g, "<br>")}</div>
     </div>
   `;
-  document.getElementById("replies-section").innerHTML = `
-    <div class="mt-4">
-      <h5>Respuestas</h5>
-      <p class="text-muted">Este consejo no tiene respuestas. Puedes volver al foro o crear un nuevo tema si deseas compartir tu comentario.</p>
-    </div>
-  `;
+
+  const repliesSection = document.getElementById("replies-section");
+  if (repliesSection) {
+    repliesSection.innerHTML = "";
+    repliesSection.style.display = "none";
+  }
 }
 
 function renderThreadDetail(thread, replies) {
   const content = thread.content || thread.description || "Sin descripción adicional.";
-  const author = thread.author || thread.created_by || "Usuario";
+  const author = getProfileName(thread.user_id) || thread.author || thread.created_by || "Usuario";
   document.getElementById("detail-content").innerHTML = `
     <div class="detail-hero">
       <div style="font-size:24px;margin-bottom:10px">💬</div>
@@ -56,7 +83,7 @@ function renderThreadDetail(thread, replies) {
             .map((reply) => `
               <div class="reply-card">
                 <div class="reply-meta mb-2">
-                  ${reply.user_id ? `Por ${reply.user_id}` : "Por Usuario"} · ${formatDate(reply.created_at)}
+                  Por ${getProfileName(reply.user_id) || "Usuario"} · ${formatDate(reply.created_at)}
                 </div>
                 <div style="font-size:14px;line-height:1.8">${(reply.content || "").replace(/\n/g, "<br>")}</div>
               </div>
@@ -74,6 +101,11 @@ function renderThreadDetail(thread, replies) {
       </form>
     </div>
   `;
+
+  const repliesSection = document.getElementById("replies-section");
+  if (repliesSection) {
+    repliesSection.style.display = "block";
+  }
 
   attachReplyHandler(thread.id);
 }
@@ -93,13 +125,22 @@ async function createReply(threadId, content) {
     thread_id: threadId,
     user_id: userId,
     content,
-    status: "active",
+    status: "activo",
   };
-  const { data, error } = await supabaseClient.from("forum_replies").insert([payload]).select().single();
-  if (error) {
-    throw error;
+
+  const response = await fetch(`${API_BASE_URL}/forum_replies`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo publicar la respuesta");
   }
-  return data;
+
+  return await response.json();
 }
 
 function attachReplyHandler(threadId) {
@@ -125,30 +166,52 @@ function attachReplyHandler(threadId) {
 }
 
 async function loadTip(id) {
-  const { data, error } = await supabaseClient.from("tips").select("*").eq("id", id).single();
-  if (error || !data) {
+  const response = await fetch(`${API_BASE_URL}/tips`);
+  if (!response.ok) {
     document.getElementById("detail-content").innerHTML = `<p class="text-danger">No se encontró el consejo solicitado.</p>`;
     return;
   }
-  renderTipDetail(data);
+
+  const tips = await response.json();
+  const tip = (tips || []).find((item) => item.id === id);
+
+  if (!tip) {
+    document.getElementById("detail-content").innerHTML = `<p class="text-danger">No se encontró el consejo solicitado.</p>`;
+    return;
+  }
+
+  renderTipDetail(tip);
 }
 
 async function loadThread(id) {
-  const { data: thread, error: threadError } = await supabaseClient.from("forum_threads").select("*").eq("id", id).single();
-  if (threadError || !thread) {
+  const [threadsResponse, repliesResponse] = await Promise.all([
+    fetch(`${API_BASE_URL}/forum_threads`),
+    fetch(`${API_BASE_URL}/forum_replies`),
+  ]);
+
+  if (!threadsResponse.ok || !repliesResponse.ok) {
     document.getElementById("detail-content").innerHTML = `<p class="text-danger">No se encontró el hilo solicitado.</p>`;
     return;
   }
 
-  const { data: replies, error: repliesError } = await supabaseClient.from("forum_replies").select("*").eq("thread_id", id).order("created_at", { ascending: true });
+  const threads = await threadsResponse.json();
+  const allReplies = await repliesResponse.json();
+  const thread = (threads || []).find((item) => item.id === id);
 
-  if (repliesError) {
-    console.error("Error cargando respuestas:", repliesError.message);
+  if (!thread) {
+    document.getElementById("detail-content").innerHTML = `<p class="text-danger">No se encontró el hilo solicitado.</p>`;
+    return;
   }
-  renderThreadDetail(thread, replies || []);
+
+  const replies = (allReplies || [])
+    .filter((reply) => reply.thread_id === id && normalizeContentStatus(reply.status) === "activo")
+    .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+
+  renderThreadDetail(thread, replies);
 }
 
 async function initDetailPage() {
+  await loadProfiles();
   const params = getQueryParams();
   if (!params.type || !params.id) {
     document.getElementById("detail-content").innerHTML = `<p class="text-danger">Faltan parámetros en la URL.</p>`;

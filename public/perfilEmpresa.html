@@ -24,12 +24,12 @@
           <div
             class="rounded-2 d-flex align-items-center justify-content-center p-2"
           >
-            <img
+            <a href="./index.html"><img
               src="../img/LogoEmpresa.png"
               alt="Bootstrap"
               width="150px"
               height="50px"
-            />
+            /></a>
           </div>
         </div>
         <ul class="nav flex-column gap-1">
@@ -78,6 +78,7 @@
         <div class="row g-3">
           <!-- Left Column -->
           <div class="col-md-8">
+            <form id="companyProfileForm">
             <!-- Información Básica -->
             <div class="card border rounded-3 shadow-none mb-3">
               <div class="card-body">
@@ -88,18 +89,23 @@
                     >Nombre de la Empresa</label
                   >
                   <input
+                    id="companyName"
                     type="text"
+                    name="name"
                     class="form-control form-control-sm bg-light"
-                    value="TechCorp Solutions"
+                    placeholder="Ej. TechCorp Solutions"
+                    required
                   />
                 </div>
 
                 <div class="mb-3">
                   <label class="form-label small fw-medium">Industria</label>
                   <input
+                    id="companySector"
                     type="text"
+                    name="sector"
                     class="form-control form-control-sm bg-light"
-                    value="Tecnología / Software"
+                    placeholder="Ej. Tecnología / Software"
                   />
                 </div>
 
@@ -108,9 +114,11 @@
                     >Tamaño de la Empresa</label
                   >
                   <input
+                    id="companySize"
                     type="text"
+                    name="size"
                     class="form-control form-control-sm bg-light"
-                    value="50-100 empleados"
+                    placeholder="Ej. 50-100 empleados"
                   />
                 </div>
 
@@ -119,9 +127,24 @@
                     >Año de Fundación</label
                   >
                   <input
-                    type="text"
+                    id="companyFoundedYear"
+                    type="number"
+                    name="founded_year"
+                    min="1800"
+                    max="2100"
                     class="form-control form-control-sm bg-light"
-                    value="2015"
+                    placeholder="Ej. 2015"
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small fw-medium">NIT</label>
+                  <input
+                    id="companyNIT"
+                    type="text"
+                    name="NIT"
+                    class="form-control form-control-sm bg-light"
+                    placeholder="Ej. 1234567-8"
                   />
                 </div>
 
@@ -129,7 +152,7 @@
                   <label class="form-label small fw-medium"
                     >Descripción de la Empresa</label
                   >
-                  <textarea class="form-control bg-light" rows="4"></textarea>
+                  <textarea id="companyDescription" name="description" class="form-control bg-light" rows="4"></textarea>
                 </div>
               </div>
             </div>
@@ -148,32 +171,87 @@
                       ><i class="bi bi-envelope text-muted"></i
                     ></span>
                     <input
+                      id="companyEmail"
                       type="email"
                       class="form-control form-control-sm bg-light border-start-0"
-                      value="contacto@techcorp.com"
+                      readonly
                     />
                   </div>
                 </div>
 
-                <div class="mb-0">
-                  <label class="form-label small fw-medium">Teléfono</label>
+                <div class="mb-3">
+                  <label class="form-label small fw-medium">Sitio Web</label>
                   <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light border-end-0"
-                      ><i class="bi bi-telephone text-muted"></i
+                      ><i class="bi bi-globe text-muted"></i
                     ></span>
                     <input
-                      type="text"
+                      id="companyWebsite"
+                      type="url"
+                      name="website"
                       class="form-control form-control-sm bg-light border-start-0"
-                      value="+34 912 345 678"
+                      placeholder="https://tuempresa.com"
                     />
                   </div>
                 </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-medium">LinkedIn</label>
+                    <input id="companyLinkedIn" type="url" name="linkedin_url" class="form-control form-control-sm bg-light" placeholder="https://linkedin.com/company/..." />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-medium">Facebook</label>
+                    <input id="companyFacebook" type="url" name="facebook_url" class="form-control form-control-sm bg-light" placeholder="https://facebook.com/..." />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small fw-medium">Ubicación</label>
+                  <input id="companyLocation" type="text" name="location" class="form-control form-control-sm bg-light" placeholder="Ciudad, País" />
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button type="submit" id="saveCompanyBtn" class="btn btn-primary btn-sm">Guardar cambios</button>
+                  <button type="button" id="resetCompanyBtn" class="btn btn-outline-secondary btn-sm">Restablecer</button>
+                </div>
               </div>
             </div>
+            </form>
           </div>
 
           <!-- Right Column -->
           <div class="col-md-4 d-flex flex-column gap-3">
+            <!-- Logo Empresa -->
+            <div class="card border rounded-3 shadow-none">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3">Logo de la Empresa</h6>
+
+                <div class="d-flex justify-content-center mb-3">
+                  <img
+                    id="companyLogoPreview"
+                    src=""
+                    alt="Logo empresa"
+                    class="rounded border bg-light"
+                    style="width: 120px; height: 120px; object-fit: cover"
+                  />
+                </div>
+
+                <input
+                  id="companyLogoFile"
+                  type="file"
+                  class="form-control form-control-sm mb-2"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                />
+
+                <button type="button" id="uploadLogoBtn" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                  Subir Logo
+                </button>
+
+                <p id="companyLogoStatus" class="small text-muted mb-0"></p>
+              </div>
+            </div>
+
             <!-- Estadísticas -->
             <div class="card border rounded-3 shadow-none">
               <div class="card-body">
@@ -189,7 +267,7 @@
                     <p class="text-muted mb-0" style="font-size: 11px">
                       Vacantes Publicadas
                     </p>
-                    <p class="fw-bold mb-0">12</p>
+                    <p id="statsJobsPublished" class="fw-bold mb-0">0</p>
                   </div>
                 </div>
 
@@ -203,7 +281,7 @@
                     <p class="text-muted mb-0" style="font-size: 11px">
                       Total Postulantes
                     </p>
-                    <p class="fw-bold mb-0">156</p>
+                    <p id="statsApplicants" class="fw-bold mb-0">0</p>
                   </div>
                 </div>
 
@@ -217,7 +295,7 @@
                     <p class="text-muted mb-0" style="font-size: 11px">
                       Miembro Desde
                     </p>
-                    <p class="fw-bold mb-0">Enero 2024</p>
+                    <p id="statsMemberSince" class="fw-bold mb-0">-</p>
                   </div>
                 </div>
               </div>
@@ -232,30 +310,26 @@
                   class="d-flex justify-content-between align-items-center mb-2"
                 >
                   <span class="small text-muted">Email verificado</span>
-                  <span class="small text-success fw-medium"
-                    ><i class="bi bi-check2 me-1"></i>Verificado</span
-                  >
+                  <span id="emailVerification" class="small fw-medium">-</span>
                 </div>
 
                 <div
                   class="d-flex justify-content-between align-items-center mb-3"
                 >
                   <span class="small text-muted">Empresa verificada</span>
-                  <span class="small text-success fw-medium"
-                    ><i class="bi bi-check2 me-1"></i>Verificado</span
-                  >
+                  <span id="companyVerification" class="small fw-medium">-</span>
                 </div>
 
                 <div class="mb-1 d-flex justify-content-between">
                   <span class="small text-muted">Perfil completo</span>
-                  <span class="small fw-medium">85%</span>
+                  <span id="profileCompletenessLabel" class="small fw-medium">0%</span>
                 </div>
                 <div class="progress mb-3" style="height: 6px">
-                  <div class="progress-bar bg-success" style="width: 85%"></div>
+                  <div id="profileCompletenessBar" class="progress-bar bg-success" style="width: 0%"></div>
                 </div>
 
-                <button class="btn btn-outline-secondary btn-sm w-100">
-                  Completar Perfil
+                <button type="button" id="completeProfileBtn" class="btn btn-outline-secondary btn-sm w-100">
+                  Ir a completar campos faltantes
                 </button>
               </div>
             </div>
@@ -265,5 +339,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/compania.js"></script>
+    <script src="./js/app.js"></script>
+    <script src="./js/perfilEmpresa.js"></script>
   </body>
 </html>

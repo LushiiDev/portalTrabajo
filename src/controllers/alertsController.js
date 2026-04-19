@@ -11,12 +11,20 @@ export const getObtenerTodasLasAlertas = async (req, res, next) => {
 
 export const postPublicarAlerta = async (req, res, next) => {
   try {
-    const { user_id, keyword, location } = req.body;
+    const {
+      user_id,
+      keyword,
+      location,
+      notify_web,
+      notify_email,
+    } = req.body;
 
     const newAlert = await alertsService.postPublicAlert(
       user_id,
       keyword,
       location,
+      notify_web,
+      notify_email,
     );
     res.json(newAlert);
   } catch (err) {

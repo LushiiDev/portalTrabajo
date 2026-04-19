@@ -12,6 +12,7 @@ export const getAllThreads = async(req, res, next) => {
 export const postforumThreads = async (req, res, next) => {
     try{
         const { 
+            user_id,
             title,
             content,
             category,
@@ -19,6 +20,7 @@ export const postforumThreads = async (req, res, next) => {
         } = req.body;
 
         const newThread = await forumThreadsService.postforumThreads(
+            user_id,
             title,
             content,
             category,

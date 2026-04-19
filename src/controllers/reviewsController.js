@@ -2,7 +2,8 @@ import * as reviewsService from "../services/reviewsService.js";
 
 export const getObtenerTodasLasReviews = async (req, res, next) => {
   try {
-    const result = await reviewsService.getAllReviews();
+    const { company_id, status } = req.query;
+    const result = await reviewsService.getAllReviews({ companyId: company_id, status });
     res.json(result);
   } catch (err) {
     return next(err);
@@ -11,7 +12,11 @@ export const getObtenerTodasLasReviews = async (req, res, next) => {
 
 export const postPublicarReview = async (req, res, next) => {
   try {
-    const { company_id, user_id, rating, comment, status } = req.body;
+    const { company_id, user_id, rating, comment, status = "activo" } = req.body;
+
+    if (!company_id || !user_id || !rating || !comment) {
+      return res.status(400).json({ message: "Faltan datos obligatorios para publicar la review." });
+    }
 
     const newReview = await reviewsService.postPublicReview(
       company_id,
