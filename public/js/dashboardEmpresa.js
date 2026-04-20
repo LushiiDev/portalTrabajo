@@ -4,8 +4,8 @@ let dashboardApplications = [];
 
 function normalizeJobStatus(rawStatus) {
   const status = (rawStatus || "pendiente").toString().trim().toLowerCase();
-  if (status === "active") return "activa";
-  if (status === "closed") return "cerrada";
+  if (status === "active" || status === "activo" || status === "activa") return "activa";
+  if (status === "closed" || status === "cerrada" || status === "inactivo" || status === "inactiva") return "cerrada";
   return status;
 }
 
@@ -127,7 +127,7 @@ async function archiveJob(jobId) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ status: "cerrada" }),
+    body: JSON.stringify({ status: "inactivo" }),
   });
 
   if (!response.ok) {
