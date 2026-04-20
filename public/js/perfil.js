@@ -66,7 +66,7 @@ async function initPerfilPage() {
 	}
 
 	currentUser = session.user;
-	setupNavbarForSession(session);
+	await setupNavbarForSession(session);
 
 	await Promise.all([loadProfile(), loadApplications(), loadAlertsAndJobs()]);
 
@@ -123,7 +123,7 @@ async function apiFetchJson(path, options = {}) {
 	return payload;
 }
 
-function setupNavbarForSession(session) {
+async function setupNavbarForSession(session) {
 	const authActions = document.getElementById("authActions");
 	const userMenu = document.getElementById("userMenu");
 	const userEmailLabel = document.getElementById("userEmailLabel");
@@ -131,9 +131,20 @@ function setupNavbarForSession(session) {
 	const profileIcon = userMenu?.querySelector(".dropdown-menu .bi-person");
 	const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
 
-	const meta = session.user?.user_metadata || {};
-	const tipoCuenta = meta.tipo_cuenta || "usuario";
-	const userLabel = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
+	let profileData = null;
+	try {
+		const { data } = await supabaseClient
+			.from("profiles")
+			.select("tipo_cuenta, full_name")
+			.eq("id", session.user?.id)
+			.maybeSingle();
+		profileData = data || null;
+	} catch {
+		profileData = null;
+	}
+
+	const tipoCuenta = profileData?.tipo_cuenta || session.user?.user_metadata?.tipo_cuenta || "usuario";
+	const userLabel = profileData?.full_name || session.user?.email || "Usuario";
 
 	if (authActions) {
 		authActions.classList.add("d-none");
@@ -264,6 +275,12 @@ async function fetchRowsByUser(tableName, userColumns, orderColumn = "created_at
 }
 
 function getMetadataFullName() {
+	// Intenta obtener del perfil cargado primero
+	if (currentProfile?.full_name) {
+		return currentProfile.full_name;
+	}
+	
+	// Fallback a metadata (para compatibilidad retroactiva)
 	const nombre = currentUser?.user_metadata?.nombre || "";
 	const apellido = currentUser?.user_metadata?.apellido || "";
 	const fromMetadata = (nombre + " " + apellido).trim();

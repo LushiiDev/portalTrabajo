@@ -1,5 +1,20 @@
 import { supabase } from "../config/supabase.js";
 
+function normalizeJobStatus(status) {
+  const v = String(status || "").trim().toLowerCase();
+  if (v === "active" || v === "activa" || v === "activo") return "activo";
+  if (
+    v === "closed" ||
+    v === "cerrada" ||
+    v === "cerrado" ||
+    v === "inactiva" ||
+    v === "inactivo"
+  ) return "inactivo";
+  if (v === "pending" || v === "pendiente") return "pendiente";
+  if (v === "rejected" || v === "rechazada" || v === "rechazado") return "rechazada";
+  return v || "pendiente";
+}
+
 export const getAllJobs = async () => {
   const { data, error } = await supabase.from("job_posts").select("*");
   if (error) {
@@ -86,9 +101,14 @@ export const deleteJob = async (id) => {
 };
 
 export const updateJob = async (id, updates) => {
+  const payload = { ...updates };
+  if (Object.prototype.hasOwnProperty.call(payload, "status")) {
+    payload.status = normalizeJobStatus(payload.status);
+  }
+
   const { data, error } = await supabase
     .from("job_posts")
-    .update(updates)
+    .update(payload)
     .eq("id", id)
     .select()
     .single();

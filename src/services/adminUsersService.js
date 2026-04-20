@@ -45,7 +45,7 @@ function isMissingProfilesStatusColumn(error) {
 async function setProfileStatusInAuthMetadata(authUserId, status) {
   if (!hasServiceRole) {
     const err = new Error(
-      "No se puede suspender perfiles sin columna status en profiles y sin SUPABASE_SERVICE_ROLE_KEY.",
+      "No se puede suspender perfiles sin SUPABASE_SERVICE_ROLE_KEY.",
     );
     err.statusCode = 400;
     throw err;
@@ -53,6 +53,17 @@ async function setProfileStatusInAuthMetadata(authUserId, status) {
 
   const normalized = normalizeStatus(status);
 
+  // Actualizar la tabla profiles
+  const { data: profileData, error: profileErr } = await supabaseAdmin
+    .from('profiles')
+    .update({ status: normalized })
+    .eq('id', authUserId)
+    .select()
+    .single();
+
+  if (profileErr) throw profileErr;
+
+  // También actualizar metadata para compatibilidad
   const { data: currentData, error: currentErr } = await supabaseAdmin.auth.admin.getUserById(authUserId);
   if (currentErr) throw currentErr;
 
@@ -69,7 +80,8 @@ async function setProfileStatusInAuthMetadata(authUserId, status) {
   return {
     id: authUserId,
     status: normalized,
-    source: "auth_metadata",
+    source: "profiles_and_auth_metadata",
+    profile: profileData,
     auth: updatedData?.user || null,
   };
 }

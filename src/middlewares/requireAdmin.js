@@ -9,29 +9,22 @@ function extractBearerToken(req) {
   return m ? m[1].trim() : null;
 }
 
-function isAdminFromMeta(meta) {
-  if (!meta) return false;
-  return (
-    meta.role === "admin" ||
-    meta.tipo_cuenta === "admin" ||
-    meta.is_admin === true
-  );
-}
-
 async function isAdminFromProfile(userId) {
   if (!hasServiceRole || !userId) return false;
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("role, tipo_cuenta, is_admin")
+    .select("role, tipo_cuenta")
     .eq("id", userId)
     .maybeSingle();
 
   if (error || !data) return false;
 
+  const role = String(data.role || "").trim().toLowerCase();
+  const tipoCuenta = String(data.tipo_cuenta || "").trim().toLowerCase();
+
   return (
-    data.role === "admin" ||
-    data.tipo_cuenta === "admin" ||
-    data.is_admin === true
+    role === "admin" ||
+    tipoCuenta === "admin"
   );
 }
 
@@ -55,18 +48,15 @@ export const requireAdmin = async (req, res, next) => {
     }
 
     const user = data.user;
-    const userMeta = user.user_metadata || {};
-    const appMeta = user.app_metadata || {};
-    const adminFromMeta = isAdminFromMeta(userMeta) || isAdminFromMeta(appMeta);
-    const adminFromProfile = adminFromMeta ? false : await isAdminFromProfile(user.id);
+    const adminFromProfile = await isAdminFromProfile(user.id);
 
-    if (!adminFromMeta && !adminFromProfile) {
+    if (!adminFromProfile) {
       return res
         .status(403)
         .json({
           status: "error",
           message:
-            "Acceso denegado: se requiere rol admin (metadata o profiles.role=admin).",
+            "Acceso denegado: se requiere rol admin.",
         });
     }
 

@@ -105,13 +105,20 @@ async function actualizarNavbarAuth() {
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
-  const meta = session.user?.user_metadata || {};
-  const tipoCuenta = meta.tipo_cuenta || "usuario";
-  const userLabel =
-    meta.nombre_empresa ||
-    meta.nombre ||
-    session.user?.email ||
-    "Usuario";
+  let profileData = null;
+  try {
+    const { data } = await supabaseClient
+      .from("profiles")
+      .select("tipo_cuenta, full_name")
+      .eq("id", session.user?.id)
+      .maybeSingle();
+    profileData = data || null;
+  } catch {
+    profileData = null;
+  }
+
+  const tipoCuenta = profileData?.tipo_cuenta || session.user?.user_metadata?.tipo_cuenta || "usuario";
+  const userLabel = profileData?.full_name || session.user?.email || "Usuario";
 
   if (userEmailLabel) {
     userEmailLabel.textContent = userLabel;
