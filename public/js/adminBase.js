@@ -50,11 +50,6 @@ async function validateAdminSession(session) {
   const user = session?.user;
   if (!user?.id) return false;
 
-  const userMeta = user.user_metadata || {};
-  const appMeta = user.app_metadata || {};
-  const adminFromMeta = isAdminFromMeta(userMeta) || isAdminFromMeta(appMeta);
-  if (adminFromMeta) return true;
-
   if (adminCheckCache.userId === user.id && adminCheckCache.isAdmin !== null) {
     return adminCheckCache.isAdmin;
   }
@@ -80,15 +75,6 @@ async function validateAdminSession(session) {
     adminCheckCache = { userId: user.id, isAdmin: false };
     return false;
   }
-}
-
-function isAdminFromMeta(meta) {
-  if (!meta) return false;
-  return (
-    meta.role === "admin" ||
-    meta.tipo_cuenta === "admin" ||
-    meta.is_admin === true
-  );
 }
 
 export async function apiFetch(path, options = {}) {
@@ -188,19 +174,8 @@ function renderSessionInfo(session) {
   if (!info) return;
 
   const user = session?.user || {};
-  const userMeta = user.user_metadata || {};
-  const appMeta = user.app_metadata || {};
-  const role =
-    userMeta.role ||
-    userMeta.tipo_cuenta ||
-    appMeta.role ||
-    appMeta.tipo_cuenta ||
-    (userMeta.is_admin ? "admin" : "");
-
   const who = user.email || user.id || "usuario sin identificar";
-  info.textContent = role
-    ? `Sesión activa: ${who} | Rol: ${role}`
-    : `Sesión activa: ${who}`;
+  info.textContent = `Sesión activa: ${who}`;
 }
 
 export function showToast(message, type = "info") {
