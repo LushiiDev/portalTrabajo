@@ -129,7 +129,7 @@ async function getProfileStatus(userId) {
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("status, tipo_cuenta")
+      .select("status, tipo_cuenta, full_name")
       .eq("id", userId)
       .maybeSingle();
 
@@ -219,8 +219,8 @@ async function actualizarNavbarEmpresa() {
   const session = data?.session;
   if (!session) return;
 
-  // Usar email del usuario autenticado
-  const nombreEmpresa = session.user?.email || "Empresa";
+  const profileData = await getProfileStatus(session.user?.id);
+  const nombreEmpresa = profileData?.full_name || session.user?.email || "Empresa";
 
   const userEmailLabel = document.getElementById("userEmailLabel");
   if (userEmailLabel) userEmailLabel.textContent = nombreEmpresa;

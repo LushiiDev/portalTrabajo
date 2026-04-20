@@ -67,7 +67,7 @@ async function getProfileStatus(userId) {
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("status, tipo_cuenta")
+      .select("status, tipo_cuenta, full_name")
       .eq("id", userId)
       .maybeSingle();
 
@@ -117,9 +117,9 @@ async function actualizarNavbarAuth() {
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
-  // Obtener tipo_cuenta de metadata o fallback a usuario
-  const tipoCuenta = session.user?.user_metadata?.tipo_cuenta || "usuario";
-  const label = session.user?.email || "Usuario";
+  const profileData = await getProfileStatus(session.user?.id);
+  const tipoCuenta = profileData?.tipo_cuenta || session.user?.user_metadata?.tipo_cuenta || "usuario";
+  const label = profileData?.full_name || session.user?.email || "Usuario";
   
   if (userEmailLabel) userEmailLabel.textContent = label;
 

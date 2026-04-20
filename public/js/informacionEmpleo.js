@@ -280,13 +280,20 @@ async function actualizarNavbarAuth() {
     authActions.classList.remove("d-none");
     userMenu.classList.add("d-none");
   } else {
-    const metadata = session.user?.user_metadata || {};
-    const tipoCuenta = metadata.tipo_cuenta || "usuario";
-    const userLabel =
-      metadata.nombre_empresa ||
-      metadata.nombre ||
-      session.user?.email ||
-      "Usuario";
+    let profileData = null;
+    try {
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("tipo_cuenta, full_name")
+        .eq("id", session.user?.id)
+        .maybeSingle();
+      profileData = profile || null;
+    } catch {
+      profileData = null;
+    }
+
+    const tipoCuenta = profileData?.tipo_cuenta || session.user?.user_metadata?.tipo_cuenta || "usuario";
+    const userLabel = profileData?.full_name || session.user?.email || "Usuario";
 
     authActions.classList.add("d-none");
     userMenu.classList.remove("d-none");
