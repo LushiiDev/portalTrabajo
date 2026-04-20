@@ -30,13 +30,15 @@ export const postCrearPerfil = async (req, res, next) => {
     const {
       id,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     } = req.body;
 
     const newProfile = await profilesService.createProfile(
       id,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     );
 
     res.status(201).json(newProfile);
@@ -50,12 +52,14 @@ export const putActualizarPerfil = async (req, res, next) => {
     const { id } = req.params;
     const {
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     } = req.body;
 
     const updatedProfile = await profilesService.updateProfile(
       id, full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     );
 
     if (!updatedProfile) {

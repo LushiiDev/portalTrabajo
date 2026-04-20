@@ -66,7 +66,7 @@ export const requireAdmin = async (req, res, next) => {
         .json({
           status: "error",
           message:
-            "Acceso denegado: se requiere rol admin (metadata o profiles.role=admin).",
+            "Acceso denegado: se requiere rol admin.",
         });
     }
 

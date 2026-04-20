@@ -38,11 +38,7 @@ async function registrarEmpresa(formData) {
     options: {
       emailRedirectTo: window.location.href,
       data: {
-        tipo_cuenta: "empresa",
-        nombre_usuario: nombreUsuario,
-        nombre_empresa: nombreEmpresa,
-        nit: nit,
-        sitio_web: sitioWeb,
+        tipo_cuenta: "empresa"
       },
     },
   });
@@ -69,7 +65,9 @@ async function registrarEmpresa(formData) {
           location: "",
           avatar_url: "",
           cv_url: "",
-          role: ""
+          role: "",
+          tipo_cuenta: "empresa",
+          email: email
         })
       });
 
@@ -130,7 +128,7 @@ async function getProfileStatus(userId) {
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("status")
+      .select("status, tipo_cuenta")
       .eq("id", userId)
       .maybeSingle();
 
@@ -138,7 +136,7 @@ async function getProfileStatus(userId) {
       console.warn("No se pudo consultar status del perfil:", error.message);
       return null;
     }
-    return String(data?.status || "activo").toLowerCase();
+    return data;
   } catch (err) {
     console.warn("Error consultando status del perfil:", err);
     return null;
@@ -146,7 +144,9 @@ async function getProfileStatus(userId) {
 }
 
 async function blockIfSuspended(user) {
-  const status = await getProfileStatus(user?.id);
+  const profileData = await getProfileStatus(user?.id);
+  const status = profileData ? String(profileData.status || "activo").toLowerCase() : "activo";
+  
   if (status === "suspendido") {
     await supabaseClient.auth.signOut();
     alert("Tu cuenta está suspendida. Contacta al administrador.");
@@ -218,10 +218,8 @@ async function actualizarNavbarEmpresa() {
   const session = data?.session;
   if (!session) return;
 
-  const nombreEmpresa =
-    session.user?.user_metadata?.nombre_empresa ||
-    session.user?.email ||
-    "Empresa";
+  // Usar email del usuario autenticado
+  const nombreEmpresa = session.user?.email || "Empresa";
 
   const userEmailLabel = document.getElementById("userEmailLabel");
   if (userEmailLabel) userEmailLabel.textContent = nombreEmpresa;

@@ -24,7 +24,7 @@ function actualizarEstadoCampos(contenedor, habilitar) {
 
 // ─── Crear perfil de usuario en el backend ─────────────────────────────────
 
-async function crearPerfilUsuario(userId, nombre, apellido) {
+async function crearPerfilUsuario(userId, nombre, apellido, email) {
   try {
     const payload = {
       id: userId,
@@ -34,7 +34,9 @@ async function crearPerfilUsuario(userId, nombre, apellido) {
       location: "",
       avatar_url: "",
       cv_url: "",
-      role: ""
+      role: "",
+      tipo_cuenta: "usuario",
+      email: email
     };
 
     const response = await fetch(`${API_BASE_URL}/api/profiles`, {
@@ -64,7 +66,7 @@ async function getProfileStatus(userId) {
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("status")
+      .select("status, tipo_cuenta")
       .eq("id", userId)
       .maybeSingle();
 
@@ -72,7 +74,7 @@ async function getProfileStatus(userId) {
       console.warn("No se pudo consultar status del perfil:", error.message);
       return null;
     }
-    return String(data?.status || "activo").toLowerCase();
+    return data;
   } catch (err) {
     console.warn("Error consultando status del perfil:", err);
     return null;
@@ -80,7 +82,9 @@ async function getProfileStatus(userId) {
 }
 
 async function blockIfSuspended(user) {
-  const status = await getProfileStatus(user?.id);
+  const profileData = await getProfileStatus(user?.id);
+  const status = profileData ? String(profileData.status || "activo").toLowerCase() : "activo";
+  
   if (status === "suspendido") {
     await supabaseClient.auth.signOut();
     alert("Tu cuenta está suspendida. Contacta al administrador.");
@@ -112,9 +116,10 @@ async function actualizarNavbarAuth() {
   authActions.classList.add("d-none");
   userMenu.classList.remove("d-none");
 
-  const meta = session.user?.user_metadata || {};
-  const tipoCuenta = meta.tipo_cuenta || "usuario";
-  const label = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
+  // Obtener tipo_cuenta de metadata o fallback a usuario
+  const tipoCuenta = session.user?.user_metadata?.tipo_cuenta || "usuario";
+  const label = session.user?.email || "Usuario";
+  
   if (userEmailLabel) userEmailLabel.textContent = label;
 
   const profileIcon = userMenu.querySelector(".dropdown-menu .bi-person");
@@ -181,14 +186,14 @@ function initAuthPage() {
         email, password,
         options: {
           emailRedirectTo: window.location.href,
-          data: { tipo_cuenta: "usuario", nombre, apellido },
+          data: { tipo_cuenta: "usuario" },
         },
       });
 
       if (error) { alert("Error al registrarte: " + error.message); return; }
       if (data?.user) {
         // Crear perfil en el backend
-        await crearPerfilUsuario(data.user.id, nombre, apellido);
+        await crearPerfilUsuario(data.user.id, nombre, apellido, email);
         
         alert("Registro exitoso. Revisa tu correo para confirmar la cuenta.");
         registroForm.reset();

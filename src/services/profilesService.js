@@ -24,7 +24,8 @@ export const getProfileById = async (id) => {
 export const createProfile = async (
   id,
   full_name, headline, bio, location,
-  avatar_url, cv_url, role, skills
+  avatar_url, cv_url, role, skills,
+  tipo_cuenta = 'usuario', email = ''
 ) => {
   const profileId = id || crypto.randomUUID();
 
@@ -33,7 +34,8 @@ export const createProfile = async (
     .insert([{
       id: profileId,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     }])
     .select()
     .single();
@@ -43,7 +45,8 @@ export const createProfile = async (
 
 export const updateProfile = async (
   id, full_name, headline, bio, location,
-  avatar_url, cv_url, role, skills
+  avatar_url, cv_url, role, skills,
+  tipo_cuenta, email
 ) => {
   const { data: existing, error: findError } = await supabase
     .from('profiles')
@@ -59,7 +62,8 @@ export const updateProfile = async (
     .from('profiles')
     .update({
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills
+      avatar_url, cv_url, role, skills,
+      tipo_cuenta, email
     })
     .eq('id', id)
     .select()

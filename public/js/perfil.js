@@ -131,9 +131,9 @@ function setupNavbarForSession(session) {
 	const profileIcon = userMenu?.querySelector(".dropdown-menu .bi-person");
 	const profileLink = profileIcon ? profileIcon.closest("a.dropdown-item") : null;
 
-	const meta = session.user?.user_metadata || {};
-	const tipoCuenta = meta.tipo_cuenta || "usuario";
-	const userLabel = meta.nombre_empresa || meta.nombre || session.user?.email || "Usuario";
+	// Obtener tipo_cuenta de metadata
+	const tipoCuenta = session.user?.user_metadata?.tipo_cuenta || "usuario";
+	const userLabel = session.user?.email || "Usuario";
 
 	if (authActions) {
 		authActions.classList.add("d-none");
@@ -264,6 +264,12 @@ async function fetchRowsByUser(tableName, userColumns, orderColumn = "created_at
 }
 
 function getMetadataFullName() {
+	// Intenta obtener del perfil cargado primero
+	if (currentProfile?.full_name) {
+		return currentProfile.full_name;
+	}
+	
+	// Fallback a metadata (para compatibilidad retroactiva)
 	const nombre = currentUser?.user_metadata?.nombre || "";
 	const apellido = currentUser?.user_metadata?.apellido || "";
 	const fromMetadata = (nombre + " " + apellido).trim();
