@@ -65,7 +65,8 @@ async function registrarEmpresa(formData) {
           location: "",
           avatar_url: "",
           cv_url: "",
-          role: "",
+          role: "empleador",
+          skills: [],
           tipo_cuenta: "empresa",
           email: email
         })

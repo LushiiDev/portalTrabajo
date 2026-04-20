@@ -1,5 +1,11 @@
 import { supabase } from '../config/supabase.js';
 
+function getRoleByAccountType(tipoCuenta, incomingRole) {
+  const normalizedIncoming = String(incomingRole || '').trim().toLowerCase();
+  if (normalizedIncoming) return normalizedIncoming;
+  return tipoCuenta === 'empresa' ? 'empleador' : 'candidato';
+}
+
 export const getAllProfiles = async () => {
   const { data, error } = await supabase.from('profiles').select('*');
   if (error) throw error;
@@ -24,17 +30,19 @@ export const getProfileById = async (id) => {
 export const createProfile = async (
   id,
   full_name, headline, bio, location,
-  avatar_url, cv_url, role, skills,
+  avatar_url, cv_url, role, skills = [],
   tipo_cuenta = 'usuario', email = ''
 ) => {
   const profileId = id || crypto.randomUUID();
+  const normalizedRole = getRoleByAccountType(tipo_cuenta, role);
 
   const { data, error } = await supabase
     .from('profiles')
     .insert([{
       id: profileId,
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills,
+      avatar_url, cv_url, role: normalizedRole,
+      skills: Array.isArray(skills) ? skills : [],
       tipo_cuenta, email
     }])
     .select()
@@ -45,7 +53,7 @@ export const createProfile = async (
 
 export const updateProfile = async (
   id, full_name, headline, bio, location,
-  avatar_url, cv_url, role, skills,
+  avatar_url, cv_url, role, skills = [],
   tipo_cuenta, email
 ) => {
   const { data: existing, error: findError } = await supabase
@@ -58,12 +66,17 @@ export const updateProfile = async (
   if (findError) throw findError;
   if (!existing) return null;
 
+  const resolvedTipoCuenta = tipo_cuenta || existing.tipo_cuenta || 'usuario';
+  const normalizedRole = getRoleByAccountType(resolvedTipoCuenta, role || existing.role);
+
   const { data, error } = await supabase
     .from('profiles')
     .update({
       full_name, headline, bio, location,
-      avatar_url, cv_url, role, skills,
-      tipo_cuenta, email
+      avatar_url, cv_url, role: normalizedRole,
+      skills: Array.isArray(skills) ? skills : existing.skills,
+      tipo_cuenta: resolvedTipoCuenta,
+      email
     })
     .eq('id', id)
     .select()

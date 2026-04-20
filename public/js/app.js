@@ -34,7 +34,8 @@ async function crearPerfilUsuario(userId, nombre, apellido, email) {
       location: "",
       avatar_url: "",
       cv_url: "",
-      role: "",
+      role: "candidato",
+      skills: [],
       tipo_cuenta: "usuario",
       email: email
     };
