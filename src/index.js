@@ -34,9 +34,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => {
-  res.send('Hola mundo');
-});
+app.use(express.static('public'));
+app.use('/img', express.static('img'));
+
 
 app.use('/jobs', jobsRouter);
 app.use('/tips', tipsRouter);
